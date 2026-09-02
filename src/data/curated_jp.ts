@@ -1,0 +1,28 @@
+import { PhotobookPrompt } from '../types';
+
+export const CURATED_JP_PROMPTS: PhotobookPrompt[] = [
+  {
+    id: 'jp-vogue-01', index: 101, title: '01·图书馆窗光与樱花', theme: '校园初恋', style: 'jp', beautyType: '图书馆靠窗文学少女', outfit: '奶油白针织吊带+燕麦棉麻开衫', location: '大学图书馆靠窗旧木长桌', composition: '50mm柔焦半身奶油散景', lighting: '午后柔窗光漫反射奶油光', focalLength: '50mm', filmTone: 'Kodak Portra 400暖奶调薄雾', aspectRatio: '3:4', tags: ['图书馆','樱花窗','柔窗光','初恋感'], promptZh: '50mm柔焦定焦半身人像，午后三点的大学图书馆靠窗旧木长桌，碎花百叶窗将阳光过滤成柔和的漫反射奶油光，穿着象牙白针织吊带外披燕麦色棉麻开衫的女生微微低头翻书，碎刘海轻薄垂落遮住半个额头，嘴唇轻轻抿着像在心里偷偷说着什么，眼神温柔青涩带一点疏离，几缕发丝被微风轻拂贴在脸颊，肌肤呈现干净的暖白瓷感，淡粉腮红与奶茶色唇釉水润，窗外樱花树粉白花瓣随风飘落，背景虚化成奶油色圆形光斑，Kodak Portra 400暖奶调带一层薄薄柔雾，将还没说出口的心事定格在四月午后。', promptEn: '50mm soft-focus half-body portrait, Japanese campus library by the window, a gentle literary girl in ivory knit cami and oatmeal linen cardigan reading by the old wooden table, fragmented bangs, soft creamy bokeh, afternoon diffused window light, Kodak Portra 400 warm milk tone, first-love innocence.', isCurated: true
+  },
+  {
+    id: 'jp-vogue-02', index: 102, title: '02·樱花道与校门口路牌', theme: '校园初恋', style: 'jp', beautyType: '樱花道微笑邻家女孩', outfit: '棉麻衬衫与百褶裙校服感', location: '校园樱花道与校门', composition: '九比十六竖版全身环境人像', lighting: '春日柔光与粉橘偏色', focalLength: '35mm', filmTone: 'Fujifilm Pro 400H青粉柔和', aspectRatio: '9:16', tags: ['樱花道','校服','百褶裙','春日柔光'], promptZh: '九比十六竖版全身环境人像，春日樱花道满开，粉白花瓣如雪飘落，身穿水洗蓝棉麻衬衫扎进米色百褶裙的女生站在校门口路牌旁，一手提白色帆布鞋赤脚踩在微湿石板上，微微侧头回眸笑意极淡，眼里映一点樱花粉，碎发被风吹起，白色中筒袜与乐福鞋干净，阳光透过樱花枝丫洒下斑驳粉橘光，Fujifilm Pro 400H青粉薄雾带褪色感，把一场擦肩而过的悸动藏进樱花雨里。', promptEn: 'Vertical full-body JP campus sakura road, girl in light-blue linen shirt and beige pleated skirt, cherry blossoms falling, spring soft light, Fujifilm Pro 400H pale pink haze, youthful first love.', isCurated: true
+  },
+  {
+    id: 'jp-vogue-03', index: 103, title: '03·便利店暖光夜', theme: '都市日常', style: 'jp', beautyType: '便利店暖光夜归少女', outfit: '淡紫针织裹身裙', location: '河合庄便利店暖光门口', composition: '85mm大光圈初恋特写', lighting: '雨后细雨柔光与便利店暖光', focalLength: '85mm', filmTone: 'Kodak Portra 400暖调', aspectRatio: '3:4', tags: ['便利店','夜色','暖光','雨后'], promptZh: '85mm大光圈初恋特写，夜色便利店暖黄玻璃门前，穿着淡紫针织裹身裙的女生手握热饮低头轻吹， wrap裙系带微露锁骨，针织垂坠柔软，发丝被店内灯光染成暖橘，发梢带一点水珠，肌肤暖白瓷感，奶茶色唇釉，背景贩卖机与车灯冷蓝掠过，细雨柔光与暖黄灯交织，Kodak Portra 400暖调低饱和，让日常成为心动的瞬间。', promptEn: '85mm close-up night convenience store, girl in lavender knit wrap dress holding hot drink, warm store light vs cool blue street, Kodak Portra 400 warm, daily-life heartbeat.', isCurated: true
+  },
+  {
+    id: 'jp-vogue-04', index: 104, title: '04·芦苇荡夕阳草地', theme: '自然季节', style: 'jp', beautyType: '围巾半遮脸奶油少女', outfit: '蕾丝蛋糕裙与粗棒针毛衣', location: '芦苇荡与夕阳草地', composition: '50mm柔焦半身奶油散景', lighting: '逆光毛边与奶油化散景', focalLength: '50mm', filmTone: 'Kodak Portra 400柔暖调', aspectRatio: '3:4', tags: ['芦苇荡','夕阳','蛋糕裙','逆光'], promptZh: '50mm柔焦半身，夕阳把芦苇荡草地染成金粉色，穿着珍珠粉蕾丝蛋糕裙外搭燕麦粗棒针毛衣的女生站在芦苇间，一角围巾轻遮脸颊只露眼睛，睫毛纤长羞涩低垂，裙摆被风轻扬，逆光在发丝镀一层绒绒金色毛边，背景芦苇随风摇曳散成奶油光斑，Kodak Portra 400柔暖调低对比，风把裙摆吹成帆，像一首没说完的歌。', promptEn: '50mm soft reed field sunset, girl in pink lace cake skirt and oatmeal sweater, scarf half-covering face, backlit golden rim, Kodak Portra 400 soft warm.', isCurated: true
+  },
+  {
+    id: 'jp-vogue-05', index: 105, title: '05·雨后小巷水洼', theme: '都市日常', style: 'jp', beautyType: '雨后小巷湿发少女', outfit: '米色帆布托特与蝴蝶结发夹', location: '雨后小巷水洼倒影', composition: '逆光剪影与发丝金边', lighting: '午后柔窗光漫反射奶油光', focalLength: '35mm', filmTone: 'Fujifilm Pro 400H薄雾', aspectRatio: '3:4', tags: ['雨后','水洼','蝴蝶结','湿发'], promptZh: '35mm逆光剪影，雨后石板小巷水洼如镜倒映天空，穿着白色棉质连衣裙点缀蝴蝶结发夹的女生赤脚轻踩水洼，米色帆布托特袋随步伐轻晃，微湿刘海贴额，裸色腮红与自然肤感，发丝被漫反射光染亮，背景电线与天空在水中清晰，Fujifilm Pro 400H青粉薄雾带水汽，世界像被雨水洗干净的初恋。', promptEn: '35mm backlit alley puddle reflection after rain, girl in white dress with bow hairpin, canvas tote, Fujifilm Pro 400H mist, pure fresh.', isCurated: true
+  },
+  {
+    id: 'jp-vogue-06', index: 106, title: '06·桔梗花田仰头', theme: '自然季节', style: 'jp', beautyType: '桔梗花田白裙少女', outfit: '法式娃娃领亚麻连衣裙', location: '桔梗花田与紫藤花架', composition: '85mm大光圈初恋特写', lighting: '春日柔光与粉橘偏色', focalLength: '85mm', filmTone: 'Kodak Portra 400暖奶调', aspectRatio: '3:4', tags: ['桔梗花','紫藤','娃娃领','仰头'], promptZh: '85mm大光圈特写，桔梗花田蓝紫花海与紫藤花架垂落，穿着浅杏娃娃领亚麻连衣裙的女生仰头微张嘴，紫色光影在脸颊投下淡粉，泡泡袖与细编织腰带，细小珍珠扣在光下微闪，肌肤暖白瓷感，嘴角带一点梦幻笑意，花穗在头顶投下斑驳散景，Kodak Portra 400暖奶调，温柔到像要融化的春日告白。', promptEn: '85mm close-up kikyo field and wisteria trellis, girl in apricot doll-collar linen dress looking up, purple light, Kodak Portra 400 warm milk.', isCurated: true
+  },
+  {
+    id: 'jp-vogue-07', index: 107, title: '07·海边木栈道海风', theme: '海与风', style: 'jp', beautyType: '海边木栈道海风少女', outfit: '薄荷绿亚麻短裤套装', location: '海边木栈道与芦苇', composition: '九比十六竖版全身环境人像', lighting: '逆光毛边与奶油化散景', focalLength: '35mm', filmTone: 'Fujifilm Pro 400H青粉薄雾', aspectRatio: '9:16', tags: ['木栈道','海风','薄荷绿','芦苇'], promptZh: '竖版全身，木栈道延伸向灰蓝海面，芦苇摇摆，海浪轻拍木桩，身穿薄荷绿亚麻无袖短套装的女生赤脚站在栈道上，海盐哑光质感的棕黄长发扎低马尾被风吹成波浪，一手拨开脸前发丝回头爽朗笑，眼里有海，木栈道透视线与天际线并置，逆光在身体镀薄金边，Fujifilm Pro 400H青粉薄雾，自由如海风。', promptEn: 'Vertical coastal wooden pier, girl in mint linen shorts set, sea salt wavy hair, backlit golden rim, Fujifilm Pro 400H.', isCurated: true
+  },
+  {
+    id: 'jp-vogue-08', index: 108, title: '08·面包店碎花窗帘', theme: '都市日常', style: 'jp', beautyType: '原木书房侧脸少女', outfit: '樱花粉连衣裙与针织帽', location: '面包店窗边与碎花窗帘', composition: '50mm柔焦半身奶油散景', lighting: '午后柔窗光漫反射奶油光', focalLength: '50mm', filmTone: 'Kodak Portra 400柔暖调', aspectRatio: '4:3', tags: ['面包店','碎花窗帘','樱花粉','针织帽'], promptZh: '50mm柔焦，面包店玻璃橱窗摆满法式面包，碎花窗帘被风轻扬，穿着樱花粉棉麻连衣裙戴米色针织帽的女生坐在窗边木桌，侧脸在原木色中柔和，帽尖绒球轻晃，米色托特袋放在膝头，肌肤暖白瓷感淡粉腮红，发丝微卷散在肩头，窗光漫反射在纸面与侧脸镀奶金色，Kodak Portra 400柔暖调，午后像一块刚出炉的面包般松软。', promptEn: '50mm bakery window with floral curtain, girl in sakura pink linen dress and knit hat, afternoon window light, Kodak Portra 400 soft warm.', isCurated: true
+  },
+];

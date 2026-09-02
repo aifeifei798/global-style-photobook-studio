@@ -9,7 +9,9 @@ import { PromptGeneratorModal } from './components/PromptGeneratorModal';
 import { BatchExportModal } from './components/BatchExportModal';
 import { DirectorGuidelinesModal } from './components/DirectorGuidelinesModal';
 import { Toast } from './components/Toast';
-import { Sparkles, Sliders, Download, BookOpen, Heart, ArrowUp, Camera, Layers, Film } from 'lucide-react';
+import { Sparkles, Sliders, Download, BookOpen, Heart, ArrowUp, Camera, Layers, Film, Shuffle, Zap } from 'lucide-react';
+import { STYLE_IDS } from './data/styleConfig';
+import { ALL_PRESETS } from './data/presetsData';
 
 export default function App() {
   const [prompts, setPrompts] = useState<PhotobookPrompt[]>(ALL_CURATED_PROMPTS);
@@ -118,6 +120,61 @@ export default function App() {
 
   const activeStyleMeta = filters.style ? STYLE_META[filters.style as StyleId] : null;
 
+  const [isBlindBoxLoading, setIsBlindBoxLoading] = useState(false);
+
+  const handleGlobalBlindBox = async () => {
+    setIsBlindBoxLoading(true);
+    const randomStyle = STYLE_IDS[Math.floor(Math.random() * STYLE_IDS.length)] as StyleId;
+    const randPresets = ALL_PRESETS.filter((p) => !p.style || p.style === randomStyle);
+    const pick = (cat: string) => {
+      const pool = randPresets.filter((p) => p.category === cat);
+      return pool[Math.floor(Math.random() * pool.length)]?.name || '';
+    };
+    const themesByStyle: Record<string, string[]> = {
+      hk: ['海风漫游', '旧港光影', '绿意庭院'],
+      jp: ['校园初恋', '自然季节', '海与风'],
+      kr: ['首尔日常', '心动瞬间', 'K-pop舞台'],
+      ny: ['街头随性', '都市地标', '时装周'],
+      ca: ['阳光海岸', '加州日常', '公路旅行'],
+      bikini: ['冲绳海岸', '湘南海岸', '伊豆热海'],
+    };
+    const tList = themesByStyle[randomStyle] || ['海风漫游'];
+    const t = tList[Math.floor(Math.random() * tList.length)];
+    const payload = {
+      style: randomStyle,
+      theme: t,
+      beautyType: pick('beauty'),
+      outfit: pick('outfit'),
+      location: pick('scene'),
+      composition: pick('composition'),
+      lighting: pick('lighting'),
+      focalLength: ['85mm','50mm','35mm','28mm'][Math.floor(Math.random()*4)],
+      filmTone: pick('lighting'),
+      aspectRatio: ['3:4','16:9','1:1','9:16'][Math.floor(Math.random()*4)],
+      customKeywords: '',
+    };
+    try {
+      const res = await fetch('/api/generate-prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setPrompts((prev) => [data.data, ...prev]);
+        showToast(`🎁 盲盒开箱：${STYLE_META[randomStyle].label}·${t} 灵感卡片已加入顶部！`);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else throw new Error();
+    } catch {
+      // 离线兜底
+      const meta = STYLE_META[randomStyle];
+      const zh = `${payload.composition}，${payload.location}，${payload.beautyType}身姿自然舒展，神态清透从容。她身穿${payload.outfit}，${payload.lighting}，呈现${payload.filmTone}胶片感。`;
+      const en = `Cinematic ${meta.enLabel} ${payload.composition}, ${payload.beautyType} at ${payload.location}, ${payload.lighting}`;
+      const fallback: PhotobookPrompt = { id: `blind-${Date.now()}`, index: 99, title: `盲盒·${meta.label}·${t}`, theme: t, style: randomStyle, styleLabel: meta.label, beautyType: payload.beautyType, outfit: payload.outfit, location: payload.location, composition: payload.composition, lighting: payload.lighting, focalLength: payload.focalLength, filmTone: payload.filmTone, aspectRatio: payload.aspectRatio, tags: [meta.label, t, '盲盒'], promptZh: zh, promptEn: en };
+      setPrompts((prev) => [fallback, ...prev]);
+      showToast(`🎁 盲盒已生成（离线）· ${meta.label}·${t}`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } finally {
+      setIsBlindBoxLoading(false);
+    }
+  };
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -189,7 +246,7 @@ export default function App() {
         </div>
 
         {/* Results Header and Active Filter Pill */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-2">
             <h3 className="font-serif-hk font-bold text-[#e5e5e5] text-sm sm:text-base tracking-wide">
               写真集画报一览
@@ -197,7 +254,20 @@ export default function App() {
             <span className="text-xs bg-[#1a1a1a] text-[#d4af37] border border-[#2a2a2a] px-2.5 py-0.5 rounded-full font-mono">
               {filteredPrompts.length} / {prompts.length}
             </span>
+            <span className="hidden sm:inline text-[11px] text-[#666666]">· 92组精选 · Skill 强控 · 单段无括号</span>
           </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button
+              onClick={handleGlobalBlindBox}
+              disabled={isBlindBoxLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-black text-xs sm:text-sm font-black shadow-lg border transition-all active:scale-95 disabled:opacity-60"
+              style={{ background: activeStyleMeta?.accent || '#d4af37', borderColor: activeStyleMeta?.accent || '#d4af37' }}
+              title="随机组合风格、镜头和场景，瞬间生成灵感卡片"
+            >
+              <Shuffle className={`w-4 h-4 ${isBlindBoxLoading ? 'animate-spin' : ''}`} />
+              <span>{isBlindBoxLoading ? '盲盒开箱中...' : '🎲 随机盲盒'}</span>
+              <span className="hidden sm:inline text-[10px] bg-black/15 px-1.5 py-0.5 rounded-full">一键灵感</span>
+            </button>
 
           {(filters.style || filters.theme || filters.search || filters.favoritesOnly) && (
             <button
@@ -208,6 +278,7 @@ export default function App() {
               清空全部筛选条件
             </button>
           )}
+          </div>
         </div>
 
         {/* Grid of Prompt Cards */}

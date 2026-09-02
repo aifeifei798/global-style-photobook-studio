@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Copy, Check, Star, Sparkles, ChevronDown, ChevronUp, Share2, Compass, Film, Eye, Sparkle } from 'lucide-react';
 import { PhotobookPrompt, StyleId } from '../types';
 import { STYLE_META } from '../data/styleConfig';
+import { formatPrompt, PromptFormat, FORMAT_META } from '../utils/formatPrompt';
 
 interface PromptCardProps {
   prompt: PhotobookPrompt;
@@ -18,26 +19,22 @@ export const PromptCard: React.FC<PromptCardProps> = ({
   onUseInGenerator,
   onShowToast,
 }) => {
-  const [copiedZh, setCopiedZh] = useState(false);
-  const [copiedEn, setCopiedEn] = useState(false);
+  const [copied, setCopied] = useState<PromptFormat | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activeTab, setActiveTab] = useState<'zh' | 'en'>('zh');
+  const [format, setFormat] = useState<PromptFormat>('flux');
 
   const styleMeta = prompt.style ? STYLE_META[prompt.style as StyleId] : null;
   const accent = styleMeta?.accent || '#d4af37';
 
-  const copyToClipboard = async (text: string, lang: 'zh' | 'en') => {
+  const currentText = formatPrompt(prompt, format);
+
+  const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(text);
-      if (lang === 'zh') {
-        setCopiedZh(true);
-        setTimeout(() => setCopiedZh(false), 2000);
-        onShowToast(`已复制「${prompt.title}」中文提示词 (无方括号/加号，纯净可直接生图)`);
-      } else {
-        setCopiedEn(true);
-        setTimeout(() => setCopiedEn(false), 2000);
-        onShowToast(`已复制「${prompt.title}」Midjourney/FLUX 英文提示词`);
-      }
+      await navigator.clipboard.writeText(currentText);
+      setCopied(format);
+      setTimeout(() => setCopied(null), 2000);
+      const label = FORMAT_META[format].label;
+      onShowToast(`已复制「${prompt.title}」· ${label}`);
     } catch (e) {
       onShowToast('复制失败，请手动选择文字');
     }
@@ -113,45 +110,35 @@ export const PromptCard: React.FC<PromptCardProps> = ({
 
       {/* Prompt Body */}
       <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
-        {/* Language Tabs */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1 bg-[#181818] p-0.5 rounded-md text-xs border border-[#242424]">
-            <button
-              onClick={() => setActiveTab('zh')}
-              className={`px-2.5 py-1 rounded font-medium transition-all ${
-                activeTab === 'zh'
-                  ? 'bg-[#262626] text-[#d4af37] shadow-xs'
-                  : 'text-[#777777] hover:text-[#cccccc]'
-              }`}
-            >
-              中文自然语言 (纯净无加号)
-            </button>
-            <button
-              onClick={() => setActiveTab('en')}
-              className={`px-2.5 py-1 rounded font-medium transition-all ${
-                activeTab === 'en'
-                  ? 'bg-[#262626] text-[#d4af37] shadow-xs'
-                  : 'text-[#777777] hover:text-[#cccccc]'
-              }`}
-            >
-              English (MJ/FLUX)
-            </button>
+        {/* Format Switcher */}
+        <div className="flex items-center justify-between mb-2 gap-2">
+          <div className="flex items-center gap-1 bg-[#181818] p-0.5 rounded-full text-[11px] border border-[#242424] overflow-x-auto">
+            {(['flux','mj','en'] as PromptFormat[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFormat(f)}
+                className={`px-2.5 py-1 rounded-full font-bold whitespace-nowrap transition-all ${format===f ? 'text-black shadow-xs' : 'text-[#777777] hover:text-[#cccccc]'}`}
+                style={format===f ? { background: accent } : {}}
+                title={FORMAT_META[f].label}
+              >
+                {FORMAT_META[f].shortLabel}
+              </button>
+            ))}
           </div>
-
-          <span className="text-[10px] text-[#666666] tracking-wider font-mono">
-            {activeTab === 'zh' ? `${prompt.promptZh.length} 字` : `${prompt.promptEn.split(' ').length} words`}
+          <span className="text-[10px] text-[#666666] tracking-wider font-mono whitespace-nowrap">
+            {format==='flux' ? `${prompt.promptZh.length} 字` : format==='mj' ? `${prompt.aspectRatio} · v6.1` : `${prompt.promptEn.split(' ').length} words`}
           </span>
+        </div>
+        <div className="text-[10px] text-[#666666] mb-1.5 -mt-1 font-serif-hk">
+          {format==='flux' && 'FLUX 纯自然语言 · 无参数直接粘贴'}
+          {format==='mj' && `Midjourney 带参数 · ${prompt.promptEn.slice(0,24)}... --ar ${prompt.aspectRatio} --v 6.1`}
+          {format==='en' && 'English · 一键翻译备用'}
         </div>
 
         {/* Prompt Content Container */}
         <div className="relative bg-[#0a0a0a] rounded-lg p-3.5 border border-[#222222] text-[#cccccc] text-xs sm:text-sm leading-relaxed font-serif-hk">
-          {activeTab === 'zh' ? (
-            <p className="line-clamp-6 select-text text-[#d4d4d4]">{prompt.promptZh}</p>
-          ) : (
-            <p className="line-clamp-6 select-text font-sans text-xs text-[#b8b8b8] leading-normal">
-              {prompt.promptEn}
-            </p>
-          )}
+          <p className={`select-text ${format==='en' || format==='mj' ? 'font-sans text-xs text-[#b8b8b8] leading-normal' : 'text-[#d4d4d4]'} line-clamp-6`}>{currentText}</p>
+          {format==='mj' && <span className="absolute bottom-1 right-1 text-[9px] bg-[#1a1a1a] text-[#d4af37] border border-[#333] px-1.5 py-0.5 rounded font-mono">--ar {prompt.aspectRatio} --v 6.1 --style raw</span>}
         </div>
 
         {/* Expanded Metadata Details */}
@@ -203,25 +190,14 @@ export const PromptCard: React.FC<PromptCardProps> = ({
         </button>
 
         <div className="flex items-center gap-1.5">
-          {activeTab === 'zh' ? (
-            <button
-              onClick={() => copyToClipboard(prompt.promptZh, 'zh')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-black text-xs font-bold transition-all active:scale-98 shadow-md"
-              style={{ background: accent }}
-            >
-              {copiedZh ? <Check className="w-3.5 h-3.5 text-black font-bold" /> : <Copy className="w-3.5 h-3.5 text-black" />}
-              <span>{copiedZh ? '已复制中文' : '复制中文生图词'}</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => copyToClipboard(prompt.promptEn, 'en')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-black text-xs font-bold transition-all active:scale-98 shadow-md"
-              style={{ background: accent }}
-            >
-              {copiedEn ? <Check className="w-3.5 h-3.5 text-black font-bold" /> : <Copy className="w-3.5 h-3.5 text-black" />}
-              <span>{copiedEn ? 'Copied' : 'Copy English'}</span>
-            </button>
-          )}
+          <button
+            onClick={copyToClipboard}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-black text-xs font-bold transition-all active:scale-98 shadow-md"
+            style={{ background: accent }}
+          >
+            {copied ? <Check className="w-3.5 h-3.5 text-black font-bold" /> : <Copy className="w-3.5 h-3.5 text-black" />}
+            <span>{copied ? `已复制 ${FORMAT_META[format].shortLabel}` : `复制 ${FORMAT_META[format].shortLabel}`}</span>
+          </button>
         </div>
       </div>
     </article>

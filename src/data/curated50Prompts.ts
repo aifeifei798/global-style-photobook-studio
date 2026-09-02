@@ -457,7 +457,7 @@ export const CURATED_50_PROMPTS: PhotobookPrompt[] = [
     filmTone: '柯达Portra 400高动态电影胶片',
     aspectRatio: '3:4',
     tags: ['海蚀岩礁', '白色连体衣', '浪花光幕', '肌肉线条', '力量与柔美'],
-    promptZh: '35mm动态电影人像，石澳海边黑褐色花岗岩海蚀礁石上，白浪拍岸卷起千堆雪白水花，一位拥有紧致薄肌线条的高级时装模特立于巨石之上，单手叉腰侧身迎向扑面而来的海风，神情清冷坚毅，体态如大理石雕塑般修长有力。她身穿一件纯白细罗纹紧身露背长袖连体衣，U型大露背剪裁极致展现出清晰流畅的蝴蝶骨与背脊线条，搭配低腰做旧水洗牛仔短裤。逆光中海水撞击岩石激起的半透明水雾如水晶帘幕般在空中散开，晶莹水珠在她的手臂与肌肤上闪烁着耀眼金光，呈现出女性力量与大自然野性碰撞的极致生命力。',
+     promptZh: '35mm动态电影人像，石澳海边黑褐色花岗岩海蚀礁石上，白浪拍岸卷起千堆雪白水花，一位拥有紧致薄肌线条的高级时装模特立于巨石之上，单手轻扶礁石侧身迎向扑面而来的海风，神情清冷坚毅，体态如大理石雕塑般修长有力。她身穿一件纯白细罗纹紧身露背长袖连体衣，U型大露背剪裁极致展现出清晰流畅的蝴蝶骨与背脊线条，搭配低腰做旧水洗牛仔短裤。逆光中海水撞击岩石激起的半透明水雾如水晶帘幕般在空中散开，晶莹水珠在她的手臂与肌肤上闪烁着耀眼金光，呈现出女性力量与大自然野性碰撞的极致生命力。85mm大光圈柔焦与柯达Portra 400高动态胶片颗粒。',
     promptEn: 'Powerful 35mm fashion frame on rugged dark granite sea stacks in Shek O. Towering ocean waves crash against the rocks in magnificent white spray. A sculpted high-fashion model stands firmly against the gusting sea breeze, showing an intrepid and refined expression. Styling consists of a form-fitting white fine-ribbed backless long-sleeve bodysuit revealing her athletic scapula and spinal line, paired with distressed denim shorts. Backlit sea mist hangs like a diamond curtain in the golden light, raw dynamic power.'
   },
   {

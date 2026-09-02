@@ -228,6 +228,12 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
           {generatedPrompt && (
             <div className="mt-4 p-4 sm:p-5 bg-[#0a0a0a] rounded-xl border border-[#282828] shadow-lg space-y-3 animate-in fade-in duration-300">
               <div className="flex items-center justify-between"><span className="font-serif-hk font-bold text-white text-base">{generatedPrompt.title}</span><span className="text-xs px-2.5 py-0.5 rounded font-medium border" style={{ background: `${activeMeta.accent}18`, color: activeMeta.accent, borderColor: `${activeMeta.accent}60` }}>{generatedPrompt.theme} · {generatedPrompt.styleLabel || activeMeta.label}</span></div>
+              {(generatedPrompt as any).skill && (
+                <div className="flex items-center justify-between text-[11px] bg-[#141414] px-2.5 py-1.5 rounded-lg border border-[#222222]">
+                  <span className="text-[#888888]">Skill 控制：<span className="text-[#cccccc]">{(generatedPrompt as any).skill}</span></span>
+                  {(generatedPrompt as any).skillValid === false ? <span className="text-rose-400">⚠ {((generatedPrompt as any).skillErrors || []).slice(0,2).join('；')}</span> : <span className="text-emerald-400">✓ Skill 自检通过 · 单段无括号加号{ (generatedPrompt as any).style === 'bikini' ? ' · 四要素齐全' : ''}</span>}
+                </div>
+              )}
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-xs text-[#888888]"><span>中文连贯自然语言 (可直接贴入生图软件)</span><button onClick={handleCopyZh} className="font-medium inline-flex items-center gap-1" style={{ color: activeMeta.accent }}>{copiedZh ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}<span>{copiedZh ? '已复制' : '一键复制'}</span></button></div>
                 <div className="p-3 bg-[#141414] rounded-lg text-xs sm:text-sm text-[#d4d4d4] font-serif-hk leading-relaxed border border-[#222222] select-text">{generatedPrompt.promptZh}</div>

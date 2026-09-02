@@ -15,6 +15,12 @@
   专为 FLUX.1 / Midjourney / SDXL / 即梦 等次世代生图引擎打造，告别碎词堆叠，直出单一连贯自然语言段落。
 </p>
 
+<p align="center">
+  <img src="docs/screenshot.png" alt="Global Studio - 6 Styles Preview" width="100%">
+  <br>
+  <em>▲ 六风格矩阵 · 92组精选 · 400+预设 · Skill强控 · FLUX/MJ/EN 一键切换与随机盲盒</em>
+</p>
+
 ---
 
 ## ✨ 核心特性

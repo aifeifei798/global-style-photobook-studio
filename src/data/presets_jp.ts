@@ -16,7 +16,7 @@ export const JP_BEAUTY: PresetItem[] = [
 ];
 
 export const JP_OUTFIT: PresetItem[] = [
-  { id: 'jp-o-01', name: '奶油白针织吊带+燕麦棉麻开衫', category: 'outfit', categoryLabel: '穿搭时尚', desc: '象牙白针织吊带内搭，外披燕麦色棉麻开衫，宽松落肩，下配浅灰蓝A字短裙', tags: ['针织吊带','棉麻开衫','A字短裙','奶油白'], visualHint: '开衫袖口微遮手背', style: 'jp' },
+  { id: 'jp-o-01', name: '奶油白针织吊带配燕麦棉麻开衫', category: 'outfit', categoryLabel: '穿搭时尚', desc: '象牙白针织吊带内搭，外披燕麦色棉麻开衫，宽松落肩，下配浅灰蓝A字短裙', tags: ['针织吊带','棉麻开衫','A字短裙','奶油白'], visualHint: '开衫袖口微遮手背', style: 'jp' },
   { id: 'jp-o-02', name: '棉麻衬衫与百褶裙校服感', category: 'outfit', categoryLabel: '穿搭时尚', desc: '水洗蓝棉麻衬衫扎进米色百褶裙，配白色中筒袜与乐福鞋，日系校园感', tags: ['棉麻衬衫','百褶裙','校园感','乐福鞋'], visualHint: '校门口路牌与樱花道', style: 'jp' },
   { id: 'jp-o-03', name: '蕾丝蛋糕裙与粗棒针毛衣', category: 'outfit', categoryLabel: '穿搭时尚', desc: '珍珠粉蕾丝蛋糕裙，外搭粗棒针燕麦色毛衣，领口露一点锁骨，温柔层次', tags: ['蛋糕裙','粗棒针','层次','珍珠粉'], visualHint: '蕾丝裙摆随步伐微微扬起', style: 'jp' },
   { id: 'jp-o-04', name: '牛津纺衬衫与高腰阔腿裤', category: 'outfit', categoryLabel: '穿搭时尚', desc: '白底薄荷绿条纹牛津纺衬衫，微宽松九分烟管裤，棉麻肌理自然褶皱', tags: ['牛津纺','阔腿裤','条纹','棉麻'], visualHint: '衬衫下摆打松结露腰线', style: 'jp' },

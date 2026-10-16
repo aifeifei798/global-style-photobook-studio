@@ -109,7 +109,7 @@ OPENAI_MODEL=gpt-4o-mini
 npm run dev      # 启动开发服务器：http://localhost:3000
 npm run build    # 生产构建 (Vite + esbuild -> dist/)
 npm start        # 启动生产服务 (NODE_ENV=production，静态 dist/ + gzip)
-npm run test     # 运行 SkillGuard / formatPrompt 单元测试 (node:test)
+npm run test     # 运行 SkillGuard / formatPrompt / 预设数据完整性单元测试 (node:test)
 ```
 
 ```bash

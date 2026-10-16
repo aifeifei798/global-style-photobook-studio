@@ -5,7 +5,7 @@
 - `npm run build` — `vite build` (frontend) + `esbuild server.ts --bundle --platform=node --format=cjs --packages=external -> dist/server.cjs`.
 - `npm start` — `node dist/server.cjs` serves `dist/` statically; requires prior `build`.
 - `npm run lint` — actually `tsc --noEmit` (typecheck only, no ESLint/Prettier).
-- `npm run test` — `tsx --test test/*.test.ts` (node:test) covering `skillGuard.ts` and `formatPrompt.ts`. No CI/pre-commit config.
+- `npm run test` — `tsx --test test/*.test.ts` (node:test) covering `skillGuard.ts`, `formatPrompt.ts` and preset-data integrity (`presetsData.test.ts`). No CI config beyond `.github/workflows/ci.yml` (lint + test + build on push/PR).
 - `npm run clean` — `rm -rf dist server.js`.
 - `./install.sh` — one-shot setup: Node 18+ check, `npm install`, creates `.env` from `.env.example`, lint + test + build.
 - `./server.sh` — process manager: `start` (background, PID file `.server.pid`, log `logs/server.log`, waits for health), `stop`, `restart`, `status`, `logs [N]`, `build`, `dev`, `test`, `clean`.

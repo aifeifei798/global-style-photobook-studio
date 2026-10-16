@@ -12,7 +12,7 @@ export const NY_BEAUTY: PresetItem[] = [
 ];
 
 export const NY_OUTFIT: PresetItem[] = [
-  { id: 'ny-o-01', name: 'Oversize白T+高腰破洞牛仔裤', category: 'outfit', categoryLabel: '穿搭时尚', desc: '象牙白Oversize挺括T恤扎进高腰直筒破洞牛仔，配宽松牛仔外套披肩与白色厚底运动鞋', tags: ['Oversize','破洞牛仔','牛仔外套','厚底鞋'], visualHint: '牛仔在日光下做旧', style: 'ny' },
+  { id: 'ny-o-01', name: 'Oversize白T配高腰破洞牛仔裤', category: 'outfit', categoryLabel: '穿搭时尚', desc: '象牙白Oversize挺括T恤扎进高腰直筒破洞牛仔，配宽松牛仔外套披肩与白色厚底运动鞋', tags: ['Oversize','破洞牛仔','牛仔外套','厚底鞋'], visualHint: '牛仔在日光下做旧', style: 'ny' },
   { id: 'ny-o-02', name: '黑皮夹克与皮革短裙', category: 'outfit', categoryLabel: '穿搭时尚', desc: '黑色皮夹克内搭露脐针织，咖啡色皮革短裙与厚底靴，金色链条点睛', tags: ['皮夹克','皮革短裙','链条','厚底靴'], visualHint: '皮革在闪光灯下光泽', style: 'ny' },
   { id: 'ny-o-03', name: '挺括白衬衫与阔腿西裤', category: 'outfit', categoryLabel: '穿搭时尚', desc: '挺括白衬衫下摆微开，卡其阔腿西装裤，配乐福鞋与棒球帽', tags: ['白衬衫','西裤','乐福鞋','棒球帽'], visualHint: '衬衫领口微敞', style: 'ny' },
   { id: 'ny-o-04', name: '卫衣与工装裤街头套装', category: 'outfit', categoryLabel: '穿搭时尚', desc: '雾灰Oversize卫衣，军绿工装裤多口袋，配亮色腋下包', tags: ['卫衣','工装裤','腋下包','雾灰'], visualHint: '工装口袋与棒球帽', style: 'ny' },

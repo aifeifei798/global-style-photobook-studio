@@ -20,6 +20,12 @@ const rateBuckets = new Map<string, { count: number; windowStart: number }>();
 app.use('/api/generate-prompt', (req, res, next) => {
   const now = Date.now();
   const key = req.ip || 'unknown';
+  // 过期桶清理，防止 Map 随 IP 数量无限增长
+  if (rateBuckets.size > 500) {
+    for (const [ip, b] of rateBuckets) {
+      if (now - b.windowStart > RATE_WINDOW_MS) rateBuckets.delete(ip);
+    }
+  }
   const bucket = rateBuckets.get(key);
   if (!bucket || now - bucket.windowStart > RATE_WINDOW_MS) {
     rateBuckets.set(key, { count: 1, windowStart: now });
@@ -48,6 +54,7 @@ function getOpenAIClient(): OpenAI | null {
     ? new OpenAI({
         apiKey,
         baseURL: process.env.OPENAI_BASE_URL || undefined,
+        timeout: 30_000, // 防止挂起请求拖死生成链路
       })
     : null;
   return cachedOpenAI;
@@ -61,7 +68,7 @@ app.get('/api/health', (req, res) => {
     // keep legacy field for backward compatibility during migration
     hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
     model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-    supportedStyles: ['hk', 'jp', 'kr', 'ny', 'ca', 'bikini'],
+    supportedStyles: Object.keys(STYLE_LABELS),
     skillVersions: STYLE_SKILL_VERSION,
   });
 });
@@ -377,10 +384,19 @@ async function startServer() {
     return res.status(500).json({ success: false, message: '服务器内部错误' });
   });
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Vogue HK Photobook Director server running on http://0.0.0.0:${PORT}`);
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`全球风格写真矩阵 server running on http://0.0.0.0:${PORT}`);
     console.log(`OpenAI model: ${process.env.OPENAI_MODEL || 'gpt-4o-mini'} | hasKey: ${hasValidOpenAIKey()}`);
   });
+
+  // 优雅关闭：server.sh stop 发送 SIGTERM 时先关闭连接再退出，避免 EADDRINUSE 残留
+  for (const signal of ['SIGTERM', 'SIGINT']) {
+    process.on(signal, () => {
+      console.log(`Received ${signal}, shutting down...`);
+      server.close(() => process.exit(0));
+      setTimeout(() => process.exit(0), 3000); // 兜底：3 秒内未干净退出则强制退出
+    });
+  }
 }
 
 startServer();

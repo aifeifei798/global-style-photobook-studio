@@ -181,16 +181,17 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
         }),
       });
       const resData = await response.json();
+      if (response.status === 429) throw new Error('rate-limited');
       if (resData.success && resData.data) {
         setGeneratedPrompt(resData.data);
         onShowToast(`🎁 盲盒开箱：${STYLE_META[randomStyle].label}·${t} 已生成灵感卡片！`);
       } else throw new Error(resData.message);
-    } catch {
+    } catch (error: any) {
       const meta = STYLE_META[randomStyle];
       const fallbackZh = `${rc}，${rs}，${rb}身姿自然舒展，神态清透从容，微风轻拂黑发。她身穿${ro}，面料随风飘拂。${rl}，锁骨与发丝被镀上温润微光，呈现${rfilm}的胶片质感，充满${meta.tagline}氛围。`;
       const fallbackEn = `Cinematic ${meta.enLabel} photography, ${rc}, ${rb} at ${rs}, effortless natural posture. Wearing ${ro}. ${rl}, ${rfilm}, high-fashion film grain.`;
       setGeneratedPrompt({ id: `blind-${Date.now()}`, index: 99, title: `盲盒·${meta.label}·${t}`, theme: t, style: randomStyle, styleLabel: meta.label, beautyType: rb, outfit: ro, location: rs, composition: rc, lighting: rl, focalLength: rf, filmTone: rfilm, aspectRatio: ra, tags: [meta.label, t, '盲盒'], promptZh: fallbackZh, promptEn: fallbackEn } as PhotobookPrompt);
-      onShowToast(`🎁 盲盒已生成（离线矩阵）· ${meta.label}·${t}`);
+      onShowToast(error?.message === 'rate-limited' ? '⏳ 请求过于频繁，盲盒已离线生成，稍后可重试 AI 增强' : `🎁 盲盒已生成（离线矩阵）· ${meta.label}·${t}`);
     } finally {
       setIsBlindBoxLoading(false);
       // 同步 UI 表单为随机值（下一轮微任务）
@@ -221,6 +222,7 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
         }),
       });
       const resData = await response.json();
+      if (response.status === 429) throw new Error('rate-limited');
       if (resData.success && resData.data) {
         setGeneratedPrompt(resData.data);
         onShowToast(`✨ ${activeMeta.label}视觉总监 AI 创作完成！`);
@@ -232,7 +234,7 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
         id: `custom-${Date.now()}`, index: 99, title: `定制·${theme}夏日写真`, theme, style, styleLabel: activeMeta.label, beautyType: selectedBeauty, outfit: selectedOutfit, location: selectedScene, composition: selectedComposition, lighting: selectedLighting, focalLength, filmTone: selectedFilm, aspectRatio, tags: [theme, activeMeta.label, '高定写真'], promptZh: fallbackZh, promptEn: fallbackEn,
       };
       setGeneratedPrompt(fallbackPrompt);
-      onShowToast('已基于高定矩阵生成写真提示词');
+      onShowToast(error?.message === 'rate-limited' ? '⏳ 请求过于频繁，已离线生成，稍后可重试 AI 增强' : '已基于高定矩阵生成写真提示词');
     } finally { setIsLoading(false); }
   };
 

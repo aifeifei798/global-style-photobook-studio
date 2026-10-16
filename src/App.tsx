@@ -181,19 +181,20 @@ export default function App() {
     try {
       const res = await fetch('/api/generate-prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json();
+      if (res.status === 429) throw new Error('rate-limited');
       if (data.success && data.data) {
         setCustomPrompts((prev) => [data.data, ...prev]);
         showToast(`🎁 盲盒开箱：${STYLE_META[randomStyle].label}·${t} 灵感卡片已加入顶部！`);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else throw new Error();
-    } catch {
+    } catch (error: any) {
       // 离线兜底
       const meta = STYLE_META[randomStyle];
       const zh = `${payload.composition}，${payload.location}，${payload.beautyType}身姿自然舒展，神态清透从容。她身穿${payload.outfit}，${payload.lighting}，呈现${payload.filmTone}胶片感。`;
       const en = `Cinematic ${meta.enLabel} ${payload.composition}, ${payload.beautyType} at ${payload.location}, ${payload.lighting}`;
       const fallback: PhotobookPrompt = { id: `blind-${Date.now()}`, index: 99, title: `盲盒·${meta.label}·${t}`, theme: t, style: randomStyle, styleLabel: meta.label, beautyType: payload.beautyType, outfit: payload.outfit, location: payload.location, composition: payload.composition, lighting: payload.lighting, focalLength: payload.focalLength, filmTone: payload.filmTone, aspectRatio: payload.aspectRatio, tags: [meta.label, t, '盲盒'], promptZh: zh, promptEn: en };
       setCustomPrompts((prev) => [fallback, ...prev]);
-      showToast(`🎁 盲盒已生成（离线）· ${meta.label}·${t}`);
+      showToast(error?.message === 'rate-limited' ? '⏳ 请求过于频繁，盲盒已离线生成，稍后可重试' : `🎁 盲盒已生成（离线）· ${meta.label}·${t}`);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsBlindBoxLoading(false);

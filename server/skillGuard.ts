@@ -1,14 +1,14 @@
 import { StyleId } from './stylePrompts';
 
 // 全局红线词库 SKILL §2 统一（各风格均含）
-const FORBIDDEN_PHRASES = [
+export const FORBIDDEN_PHRASES = [
   '男友视角', '偷拍', '恶作剧', '偷吃', '偷看他',
   '标准微笑', '手叉腰', '比耶', '凹造型', '摆 pose', '摆pose',
   '正对镜头尬笑',
 ] as const;
 
 const FORBIDDEN_CHARS_RE = /[\[\]\(\)\+]/g;
-const FORBIDDEN_CHARS_TEST_RE = /[\[\]\(\)\+]/;
+export const FORBIDDEN_CHARS_TEST_RE = /[\[\]\(\)\+]/;
 
 // 风格专属补充（比基尼严禁低俗化）
 const BIKINI_FORBIDDEN = ['性暗示', '暴露', '色情', '低俗'] as const;

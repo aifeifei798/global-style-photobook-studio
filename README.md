@@ -112,6 +112,16 @@ npm start        # 启动生产服务 (NODE_ENV=production，静态 dist/ + gzip
 npm run test     # 运行 SkillGuard / formatPrompt 单元测试 (node:test)
 ```
 
+```bash
+# 5. 一键安装与服务管理（推荐）
+./install.sh         # 环境检查 + 依赖安装 + 生成 .env + lint + 测试 + 生产构建
+./server.sh start    # 后台启动生产服务（日志 logs/server.log，自动等待健康检查）
+./server.sh status   # 查看运行状态与 /api/health
+./server.sh logs     # 查看最近日志（可指定行数：./server.sh logs 100）
+./server.sh restart  # 重启
+./server.sh stop     # 停止
+```
+
 ---
 
 ## 🔌 API 接口规范

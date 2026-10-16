@@ -33,11 +33,18 @@ app.use('/api/generate-prompt', (req, res, next) => {
 });
 
 // Helper to get OpenAI client (cached — one client per process, not per request)
+// Placeholder values from .env.example (e.g. MY_OPENAI_API_KEY) are treated as "not configured",
+// so the app falls back to the offline deterministic generator instead of failing with 401.
+function hasValidOpenAIKey(): boolean {
+  const key = process.env.OPENAI_API_KEY;
+  return Boolean(key) && key !== 'MY_OPENAI_API_KEY';
+}
+
 let cachedOpenAI: OpenAI | null | undefined;
 function getOpenAIClient(): OpenAI | null {
   if (cachedOpenAI !== undefined) return cachedOpenAI;
   const apiKey = process.env.OPENAI_API_KEY;
-  cachedOpenAI = apiKey
+  cachedOpenAI = hasValidOpenAIKey()
     ? new OpenAI({
         apiKey,
         baseURL: process.env.OPENAI_BASE_URL || undefined,
@@ -50,7 +57,7 @@ function getOpenAIClient(): OpenAI | null {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    hasOpenAIKey: Boolean(process.env.OPENAI_API_KEY),
+    hasOpenAIKey: hasValidOpenAIKey(),
     // keep legacy field for backward compatibility during migration
     hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
     model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
@@ -372,7 +379,7 @@ async function startServer() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Vogue HK Photobook Director server running on http://0.0.0.0:${PORT}`);
-    console.log(`OpenAI model: ${process.env.OPENAI_MODEL || 'gpt-4o-mini'} | hasKey: ${Boolean(process.env.OPENAI_API_KEY)}`);
+    console.log(`OpenAI model: ${process.env.OPENAI_MODEL || 'gpt-4o-mini'} | hasKey: ${hasValidOpenAIKey()}`);
   });
 }
 

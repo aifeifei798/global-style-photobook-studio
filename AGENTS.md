@@ -7,6 +7,8 @@
 - `npm run lint` — actually `tsc --noEmit` (typecheck only, no ESLint/Prettier).
 - `npm run test` — `tsx --test test/*.test.ts` (node:test) covering `skillGuard.ts` and `formatPrompt.ts`. No CI/pre-commit config.
 - `npm run clean` — `rm -rf dist server.js`.
+- `./install.sh` — one-shot setup: Node 18+ check, `npm install`, creates `.env` from `.env.example`, lint + test + build.
+- `./server.sh` — process manager: `start` (background, PID file `.server.pid`, log `logs/server.log`, waits for health), `stop`, `restart`, `status`, `logs [N]`, `build`, `dev`, `test`, `clean`.
 
 ## Architecture
 - Single-package app, not a monorepo. Two entrypoints: `server.ts` (Express API + Vite SSR/dev) and `src/main.tsx` -> `src/App.tsx`.

@@ -153,9 +153,35 @@ npm run test     # 运行 SkillGuard / formatPrompt 单元测试 (node:test)
 │   │   └── curatedAll.ts       # 统一聚合导出
 │   └── utils/
 │       └── formatPrompt.ts     # FLUX 纯自然语言 / MJ --ar --v 6.1 / EN 翻译 三格式转化器
+├── skills/                     # Agent skill 套装（见下方「Agent Skills」）
+│   ├── photobook-studio/           # 项目运行/API/新增风格 checklist
+│   ├── photobook-prompt-guard/     # SkillGuard 硬约束与违禁词表
+│   └── photobook-style-recipes/    # 六风格配方 + 8 胶片影调
+├── scripts/
+│   └── install-skills.sh           # 把 skills 安装到 Hermes / Claude Code / opencode
 ├── dist/                       # 生产产物（vite 532KB + server.cjs 46KB）
-└── package.json                # v1.1.0 / global-style-photobook-studio
+└── package.json                # v1.2.0 / global-style-photobook-studio
 ```
+
+---
+
+## 🤖 Agent Skills（给所有 agents 用）
+
+项目自带的三个 skill，把项目的核心知识（SkillGuard 红线、六风格配方、API 用法）沉淀成标准 SKILL.md，任何支持 skills 的 agent（Hermes、Claude Code、opencode 等）都能直接使用：
+
+| Skill | 用途 |
+|---|---|
+| `photobook-studio` | 安装、启动、健康检查、API 调用、新增风格 checklist |
+| `photobook-prompt-guard` | SkillGuard 硬约束：段落长度、违禁词/字符、比基尼四要素、清洗流程 |
+| `photobook-style-recipes` | 六风格快速配方（港/日/韩/纽/加州/比基尼）+ 8 种胶片影调预设 |
+
+安装到本机所有 agent：
+
+```bash
+./scripts/install-skills.sh
+```
+
+会复制到 `~/.hermes/skills/`、`~/.claude/skills/`、`~/.config/opencode/skills/`（目录不存在则跳过）。改 skill 后重新跑一次即可同步。
 
 ---
 

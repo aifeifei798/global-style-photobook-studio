@@ -9,6 +9,7 @@
 - `npm run clean` — `rm -rf dist server.js`.
 - `./install.sh` — one-shot setup: Node 18+ check, `npm install`, creates `.env` from `.env.example`, lint + test + build.
 - `./server.sh` — process manager: `start` (background, PID file `.server.pid`, log `logs/server.log`, waits for health), `stop`, `restart`, `status`, `logs [N]`, `build`, `dev`, `test`, `clean`.
+- `./scripts/install-skills.sh` — copies the `skills/` pack (photobook-studio, photobook-prompt-guard, photobook-style-recipes) into `~/.hermes/skills`, `~/.claude/skills`, `~/.config/opencode/skills`. Run after editing any `skills/*/SKILL.md`.
 
 ## Architecture
 - Single-package app, not a monorepo. Two entrypoints: `server.ts` (Express API + Vite SSR/dev) and `src/main.tsx` -> `src/App.tsx`.

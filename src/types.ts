@@ -1,10 +1,10 @@
-export type PresetCategory = 'beauty' | 'outfit' | 'scene' | 'composition' | 'lighting' | 'BEAUTY' | 'OUTFIT' | 'SCENE' | 'COMPOSITION' | 'LIGHTING';
+export type PresetCategory = 'beauty' | 'outfit' | 'scene' | 'composition' | 'lighting' | 'film' | 'BEAUTY' | 'OUTFIT' | 'SCENE' | 'COMPOSITION' | 'LIGHTING';
 export type StyleId = 'hk' | 'jp' | 'kr' | 'ny' | 'ca' | 'bikini';
 
 export interface PresetItem {
   id: string;
   name: string;
-  category: 'beauty' | 'outfit' | 'scene' | 'composition' | 'lighting';
+  category: 'beauty' | 'outfit' | 'scene' | 'composition' | 'lighting' | 'film';
   categoryLabel: string;
   desc: string;
   tags: string[];

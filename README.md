@@ -37,7 +37,7 @@
   - 杜绝传统 `[ ]` 方括号、`+` 加号与机械摆拍词。
   - 严禁油腻偷拍/低俗视角，比基尼特辑严格锁定“颜色/款式/材质/海岸线”四要素。
 - **⚡ 优雅降级**：未配置 OpenAI API Key 时自动降级为本地确定性拼接引擎，离线完全可用。
-- **📦 庞大灵感资产**：内置 **374 组**专业预设（近 400，`hk 200 / jp 40 / kr 32 / ny 32 / ca 32 / bikini 38`）、**92** 组精选写真词，支持 TXT / MD / JSON / CSV 批量导出。
+- **📦 庞大灵感资产**：内置 **382 组**专业预设（`hk 200 / jp 40 / kr 32 / ny 32 / ca 32 / bikini 38 / film 8`）、**92** 组精选写真词，支持 TXT / MD / JSON / CSV 批量导出。
 
 ---
 
@@ -108,7 +108,8 @@ OPENAI_MODEL=gpt-4o-mini
 # 4. 开发与构建
 npm run dev      # 启动开发服务器：http://localhost:3000
 npm run build    # 生产构建 (Vite + esbuild -> dist/)
-npm start        # 启动生产服务
+npm start        # 启动生产服务 (NODE_ENV=production，静态 dist/ + gzip)
+npm run test     # 运行 SkillGuard / formatPrompt 单元测试 (node:test)
 ```
 
 ---
@@ -137,7 +138,7 @@ npm start        # 启动生产服务
 │   ├── components/             # UI 组件库 (PromptCard, GeneratorModal, Library 等)
 │   ├── data/
 │   │   ├── styleConfig.ts      # 风格元数据与色彩规范（6 色板）
-│   │   ├── presets_*.ts        # 374 组专业预设（hk 200 / jp 40 / kr 32 / ny 32 / ca 32 / bikini 38）
+│   │   ├── presets_*.ts        # 382 组专业预设（hk 200 / jp 40 / kr 32 / ny 32 / ca 32 / bikini 38 / film 8）
 │   │   ├── curated_*.ts        # 92 组精选提示词库（分风格）
 │   │   └── curatedAll.ts       # 统一聚合导出
 │   └── utils/

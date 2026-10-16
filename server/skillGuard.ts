@@ -8,15 +8,16 @@ const FORBIDDEN_PHRASES = [
 ] as const;
 
 const FORBIDDEN_CHARS_RE = /[\[\]\(\)\+]/g;
+const FORBIDDEN_CHARS_TEST_RE = /[\[\]\(\)\+]/;
 
 // 风格专属补充（比基尼严禁低俗化）
 const BIKINI_FORBIDDEN = ['性暗示', '暴露', '色情', '低俗'] as const;
 
-// 蜜色：比基尼四要素词库（来自 jp-bikini-summer-50.md §视觉语法底座）
-const BIKINI_COLORS = ['奶油白', '珍珠粉', '薄荷绿', '浅杏', '燕麦', '淡紫', '淡蓝', '浅橘', '樱花粉', '天蓝', '珍珠白', '鹅黄', '浅紫', '薄荷', '淡粉'] as const;
-const BIKINI_CUTS = ['系带三角', '挂脖', '荷叶边', '蝴蝶结', '运动风', '连体', '高腰', '平角', '抹胸', '三角'] as const;
-const BIKINI_FABRICS = ['弹力针织', '细罗纹', '水洗棉', '弹力蕾丝', '蕾丝', '亚麻混纺', '速干莱卡', '莱卡', '棉质', '针织', '弹力', '编织', '细编织'] as const;
-const BIKINI_LOCATIONS = ['冲绳', '青之洞窟', '万座毛', '古宇利', '湘南', '江之岛', '江之电', '七里滨', '由比', '伊豆', '热海', '来宫', '河津', '镰仓', '逗子', '三浦', '稻村崎', '静冈', '滨松', '远州滩', '美国村'] as const;
+// 比基尼四要素词库（来自 jp-bikini-summer-50.md §视觉语法底座）——导出供 server 兜底复用
+export const BIKINI_COLORS = ['奶油白', '珍珠粉', '薄荷绿', '浅杏', '燕麦', '淡紫', '淡蓝', '浅橘', '樱花粉', '天蓝', '珍珠白', '鹅黄', '浅紫', '薄荷', '淡粉'] as const;
+export const BIKINI_CUTS = ['系带三角', '挂脖', '荷叶边', '蝴蝶结', '运动风', '连体', '高腰', '平角', '抹胸', '三角'] as const;
+export const BIKINI_FABRICS = ['弹力针织', '细罗纹', '水洗棉', '弹力蕾丝', '蕾丝', '亚麻混纺', '速干莱卡', '莱卡', '棉质', '针织', '弹力', '编织', '细编织'] as const;
+export const BIKINI_LOCATIONS = ['冲绳', '青之洞窟', '万座毛', '古宇利', '湘南', '江之岛', '江之电', '七里滨', '由比', '伊豆', '热海', '来宫', '河津', '镰仓', '逗子', '三浦', '稻村崎', '静冈', '滨松', '远州滩', '美国村'] as const;
 
 function containsAny(text: string, list: readonly string[]): boolean {
   return list.some((w) => text.includes(w));
@@ -30,7 +31,7 @@ export interface ValidationResult {
 }
 
 export function cleanSkillViolations(text: string): string {
-  let cleaned = text.replace(FORBIDDEN_CHARS_RE, '').replace(/[\[\]\(\)\+]/g, '');
+  let cleaned = text.replace(FORBIDDEN_CHARS_RE, '');
   // 去除多余的 markdown 列表符号与编号
   cleaned = cleaned.replace(/^\s*[-*]\s+/gm, '').replace(/^\s*\d+[\.、]\s*/gm, '');
   // 压制多余空行，强制单段
@@ -44,9 +45,7 @@ export function validatePromptZh(promptZh: string, style: StyleId): { valid: boo
   const errors: string[] = [];
   if (!promptZh || promptZh.length < 80) errors.push('长度不足80字，未达150-320字要求');
   if (promptZh.length > 600) errors.push('长度超过600字，需150-320字');
-  if (FORBIDDEN_CHARS_RE.test(promptZh)) errors.push('包含禁止符号 []()+');
-  // 重置正则 lastIndex
-  FORBIDDEN_CHARS_RE.lastIndex = 0;
+  if (FORBIDDEN_CHARS_TEST_RE.test(promptZh)) errors.push('包含禁止符号 []()+');
   const foundForbidden = FORBIDDEN_PHRASES.filter((p) => promptZh.includes(p));
   if (foundForbidden.length) errors.push(`包含违禁词:${foundForbidden.join('/')}`);
   if (style === 'bikini') {
@@ -80,13 +79,11 @@ export function validateAndClean(parsed: any, style: StyleId): ValidationResult 
   en = cleanSkillViolations(en);
   // 英文同理去括号加号
   en = en.replace(FORBIDDEN_CHARS_RE, '').trim();
-  FORBIDDEN_CHARS_RE.lastIndex = 0;
 
   const { valid, errors } = validatePromptZh(zh, style);
   const enErrors: string[] = [];
   if (!en || en.length < 20) enErrors.push('英文长度不足');
-  if (FORBIDDEN_CHARS_RE.test(en)) enErrors.push('英文含禁止符号');
-  FORBIDDEN_CHARS_RE.lastIndex = 0;
+  if (FORBIDDEN_CHARS_TEST_RE.test(en)) enErrors.push('英文含禁止符号');
   if (FORBIDDEN_PHRASES.some((p) => en.includes(p))) enErrors.push('英文含违禁词');
 
   const allErrors = [...errors, ...enErrors.map((e) => `EN:${e}`)];

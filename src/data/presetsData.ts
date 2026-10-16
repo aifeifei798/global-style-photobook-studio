@@ -1834,6 +1834,82 @@ const HK_LIGHT_STYLED = withStyle(LIGHTING_PRESETS, 'hk');
 
 const HK_ALL = [...HK_BEAUTY_STYLED, ...HK_OUTFIT_STYLED, ...HK_SCENE_STYLED, ...HK_COMP_STYLED, ...HK_LIGHT_STYLED];
 
+// 胶片影调预设（全局通用，无风格绑定）——修复此前 filmTone 被光影预设重复占用的问题
+export const FILM_PRESETS: PresetItem[] = [
+  {
+    id: 'f-01',
+    name: '经典柯达Portra 400暖调微颗粒胶片质感',
+    category: 'film',
+    categoryLabel: '胶片影调',
+    desc: '模拟柯达Portra 400彩色负片，肤色温润通透泛着微甜暖光，暗部柔和青灰调，高光带细腻银盐颗粒',
+    tags: ['Kodak Portra 400', '暖润肤色', '银盐颗粒', '经典胶片'],
+    visualHint: '画面带有呼吸感的胶片颗粒，色彩饱满而柔和'
+  },
+  {
+    id: 'f-02',
+    name: '柯达Portra 800高感柔暖胶片质感',
+    category: 'film',
+    categoryLabel: '胶片影调',
+    desc: '高感光度负片的柔暖颗粒，暗部层次丰富，弱光下仍保留细腻质感，复古而高级',
+    tags: ['Portra 800', '高感柔暖', '弱光质感', '复古高级'],
+    visualHint: '暗部带轻微颗粒，整体色调偏暖偏柔'
+  },
+  {
+    id: 'f-03',
+    name: '富士Pro 400H清冷通透胶片质感',
+    category: 'film',
+    categoryLabel: '胶片影调',
+    desc: '富士负片的清冷蓝绿科学，肤色干净通透，阴影带迷人青调，夏日氧气感极强',
+    tags: ['Fuji Pro 400H', '清冷蓝绿', '通透氧气', '夏日清凉'],
+    visualHint: '绿色与海水极其纯净透亮，阴影偏青'
+  },
+  {
+    id: 'f-04',
+    name: '富士Superia 400日常快照胶片质感',
+    category: 'film',
+    categoryLabel: '胶片影调',
+    desc: '千禧年日常快照胶片色彩，饱和偏暖带轻微紫调，怀旧生活感与随性氛围',
+    tags: ['Superia 400', '千禧快照', '怀旧紫调', '随性生活感'],
+    visualHint: '色彩饱和略带紫，像旧相册里的随手拍'
+  },
+  {
+    id: 'f-05',
+    name: '柯达Gold 200复古金色胶片质感',
+    category: 'film',
+    categoryLabel: '胶片影调',
+    desc: '低感光度经典Gold 200的浓郁金色调，阳光感强烈，色彩厚重带年代感',
+    tags: ['Kodak Gold 200', '浓郁金色', '阳光感', '年代感'],
+    visualHint: '整体染上一层温暖金色，像九十年代家庭相册'
+  },
+  {
+    id: 'f-06',
+    name: '伊尔福HP5经典黑白银盐胶片质感',
+    category: 'film',
+    categoryLabel: '胶片影调',
+    desc: '黑白负片的细腻银盐颗粒，灰阶层次丰富，光影对比柔和而有呼吸感',
+    tags: ['Ilford HP5', '黑白银盐', '灰阶层次', '光影呼吸'],
+    visualHint: '黑白画面带细腻颗粒，暗部不死黑高光不溢出'
+  },
+  {
+    id: 'f-07',
+    name: '富士Velvia 50高饱和正片胶片质感',
+    category: 'film',
+    categoryLabel: '胶片影调',
+    desc: '传奇正片的极致饱和色彩，红绿蓝浓烈却不失真，风景与海水呈现明信片级质感',
+    tags: ['Velvia 50', '高饱和', '正片色彩', '明信片质感'],
+    visualHint: '色彩浓烈鲜艳，像国家地理正片扫描'
+  },
+  {
+    id: 'f-08',
+    name: '拍立得即时成像柔焦胶片质感',
+    category: 'film',
+    categoryLabel: '胶片影调',
+    desc: '拍立得相纸的柔焦与轻微过曝，边缘晕染，色调偏暖偏淡，私密而怀旧',
+    tags: ['Polaroid', '柔焦晕染', '即时成像', '私密怀旧'],
+    visualHint: '画面边缘柔化，带轻微过曝与相纸纹理'
+  },
+];
+
 export const ALL_PRESETS: PresetItem[] = [
   ...HK_ALL,
   ...JP_PRESETS,
@@ -1841,6 +1917,7 @@ export const ALL_PRESETS: PresetItem[] = [
   ...NY_PRESETS,
   ...CA_PRESETS,
   ...BIKINI_PRESETS,
+  ...FILM_PRESETS,
 ];
 
 export const PRESETS_BY_STYLE = {

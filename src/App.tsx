@@ -14,7 +14,16 @@ import { STYLE_IDS } from './data/styleConfig';
 import { ALL_PRESETS } from './data/presetsData';
 
 export default function App() {
-  const [prompts, setPrompts] = useState<PhotobookPrompt[]>(ALL_CURATED_PROMPTS);
+  // 自定义/盲盒提示词持久化到 localStorage，刷新页面后不丢失
+  const [customPrompts, setCustomPrompts] = useState<PhotobookPrompt[]>(() => {
+    try {
+      const saved = localStorage.getItem('vogue_hk_custom_prompts');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const prompts = [...customPrompts, ...ALL_CURATED_PROMPTS];
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('vogue_hk_favorites');
@@ -37,9 +46,24 @@ export default function App() {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isGuidelinesOpen, setIsGuidelinesOpen] = useState(false);
   const [selectedPresetForGenerator, setSelectedPresetForGenerator] = useState<PresetItem | null>(null);
+  const [generatorInitialPrompt, setGeneratorInitialPrompt] = useState<PhotobookPrompt | null>(null);
 
   // Toast notification
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => setToastMessage(null), 3500);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('vogue_hk_custom_prompts', JSON.stringify(customPrompts));
+    } catch {
+      // localStorage 不可用（隐私模式），静默忽略
+    }
+  }, [customPrompts]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -73,11 +97,12 @@ export default function App() {
 
   // Add custom generated prompt to the collection
   const handleSaveCustomPrompt = (newPrompt: PhotobookPrompt) => {
-    setPrompts((prev) => [newPrompt, ...prev]);
+    setCustomPrompts((prev) => [newPrompt, ...prev]);
     showToast(`已成功收录「${newPrompt.title}」至写真集`);
   };
 
   const handleUseInGenerator = (prompt: PhotobookPrompt) => {
+    setGeneratorInitialPrompt(prompt);
     setIsGeneratorOpen(true);
     showToast(`已载入「${prompt.title}」至工作台`);
   };
@@ -149,7 +174,7 @@ export default function App() {
       composition: pick('composition'),
       lighting: pick('lighting'),
       focalLength: ['85mm','50mm','35mm','28mm'][Math.floor(Math.random()*4)],
-      filmTone: pick('lighting'),
+      filmTone: pick('film'),
       aspectRatio: ['3:4','16:9','1:1','9:16'][Math.floor(Math.random()*4)],
       customKeywords: '',
     };
@@ -157,7 +182,7 @@ export default function App() {
       const res = await fetch('/api/generate-prompt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json();
       if (data.success && data.data) {
-        setPrompts((prev) => [data.data, ...prev]);
+        setCustomPrompts((prev) => [data.data, ...prev]);
         showToast(`🎁 盲盒开箱：${STYLE_META[randomStyle].label}·${t} 灵感卡片已加入顶部！`);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else throw new Error();
@@ -167,7 +192,7 @@ export default function App() {
       const zh = `${payload.composition}，${payload.location}，${payload.beautyType}身姿自然舒展，神态清透从容。她身穿${payload.outfit}，${payload.lighting}，呈现${payload.filmTone}胶片感。`;
       const en = `Cinematic ${meta.enLabel} ${payload.composition}, ${payload.beautyType} at ${payload.location}, ${payload.lighting}`;
       const fallback: PhotobookPrompt = { id: `blind-${Date.now()}`, index: 99, title: `盲盒·${meta.label}·${t}`, theme: t, style: randomStyle, styleLabel: meta.label, beautyType: payload.beautyType, outfit: payload.outfit, location: payload.location, composition: payload.composition, lighting: payload.lighting, focalLength: payload.focalLength, filmTone: payload.filmTone, aspectRatio: payload.aspectRatio, tags: [meta.label, t, '盲盒'], promptZh: zh, promptEn: en };
-      setPrompts((prev) => [fallback, ...prev]);
+      setCustomPrompts((prev) => [fallback, ...prev]);
       showToast(`🎁 盲盒已生成（离线）· ${meta.label}·${t}`);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
@@ -187,6 +212,7 @@ export default function App() {
         onFilterChange={handleFilterChange}
         onOpenGenerator={() => {
           setSelectedPresetForGenerator(null);
+          setGeneratorInitialPrompt(null);
           setIsGeneratorOpen(true);
         }}
         onOpenPresetLibrary={() => setIsPresetLibraryOpen(true)}
@@ -254,7 +280,7 @@ export default function App() {
             <span className="text-xs bg-[#1a1a1a] text-[#d4af37] border border-[#2a2a2a] px-2.5 py-0.5 rounded-full font-mono">
               {filteredPrompts.length} / {prompts.length}
             </span>
-            <span className="hidden sm:inline text-[11px] text-[#666666]">· 92组精选 · Skill 强控 · 单段无括号</span>
+            <span className="hidden sm:inline text-[11px] text-[#666666]">· {prompts.length} 组 · Skill 强控 · 单段无括号</span>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button
@@ -311,7 +337,10 @@ export default function App() {
                 重置筛选
               </button>
               <button
-                onClick={() => setIsGeneratorOpen(true)}
+                onClick={() => {
+                  setGeneratorInitialPrompt(null);
+                  setIsGeneratorOpen(true);
+                }}
                 className="px-4 py-2 rounded-lg bg-[#d4af37] text-black text-xs font-bold hover:bg-[#c4a030] transition-all"
               >
                 前往 AI 工作台定制
@@ -342,7 +371,7 @@ export default function App() {
           </div>
 
           <p className="text-[#666666] font-serif-hk text-center md:text-right">
-            50 组纯净中文自然语言 AI 生图词 · 适配 Midjourney v6 / FLUX / SDXL / 剪映
+            {prompts.length} 组纯净中文自然语言 AI 生图词 · 适配 Midjourney v6 / FLUX / SDXL / 剪映
           </p>
         </div>
       </footer>
@@ -360,6 +389,7 @@ export default function App() {
         isOpen={isGeneratorOpen}
         onClose={() => setIsGeneratorOpen(false)}
         initialPreset={selectedPresetForGenerator}
+        initialPrompt={generatorInitialPrompt}
         onSavePrompt={handleSaveCustomPrompt}
         onShowToast={showToast}
         initialStyle={(filters.style as any) || undefined}

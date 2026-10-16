@@ -1,26 +1,49 @@
 import 'dotenv/config';
 import express from 'express';
 import path from 'path';
+import compression from 'compression';
 import { createServer as createViteServer } from 'vite';
 import OpenAI from 'openai';
 import { getStylePrompt, isValidStyle, STYLE_LABELS, STYLE_SKILL_VERSION } from './server/stylePrompts';
-import { validateAndClean, cleanSkillViolations } from './server/skillGuard';
+import { validateAndClean, cleanSkillViolations, BIKINI_COLORS, BIKINI_CUTS, BIKINI_FABRICS, BIKINI_LOCATIONS } from './server/skillGuard';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
+app.use(compression());
 app.use(express.json({ limit: '1mb' }));
 
-// Helper to get OpenAI client
-function getOpenAIClient(): OpenAI | null {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return null;
+// 简单内存限流：每 IP 每分钟最多 20 次生成请求，防止滥用 OpenAI 额度
+const RATE_WINDOW_MS = 60_000;
+const RATE_LIMIT = 20;
+const rateBuckets = new Map<string, { count: number; windowStart: number }>();
+app.use('/api/generate-prompt', (req, res, next) => {
+  const now = Date.now();
+  const key = req.ip || 'unknown';
+  const bucket = rateBuckets.get(key);
+  if (!bucket || now - bucket.windowStart > RATE_WINDOW_MS) {
+    rateBuckets.set(key, { count: 1, windowStart: now });
+    return next();
   }
-  return new OpenAI({
-    apiKey,
-    baseURL: process.env.OPENAI_BASE_URL || undefined,
-  });
+  bucket.count += 1;
+  if (bucket.count > RATE_LIMIT) {
+    return res.status(429).json({ success: false, message: '请求过于频繁，请稍后再试' });
+  }
+  return next();
+});
+
+// Helper to get OpenAI client (cached — one client per process, not per request)
+let cachedOpenAI: OpenAI | null | undefined;
+function getOpenAIClient(): OpenAI | null {
+  if (cachedOpenAI !== undefined) return cachedOpenAI;
+  const apiKey = process.env.OPENAI_API_KEY;
+  cachedOpenAI = apiKey
+    ? new OpenAI({
+        apiKey,
+        baseURL: process.env.OPENAI_BASE_URL || undefined,
+      })
+    : null;
+  return cachedOpenAI;
 }
 
 // Health check endpoint
@@ -57,6 +80,18 @@ app.post('/api/validate-prompt', (req, res) => {
   const result = validateAndClean({ promptZh, promptEn }, styleId as any);
   res.json({ success: true, data: { valid: result.valid, errors: result.errors, cleanedZh: result.cleanedZh, cleanedEn: result.cleanedEn, style: styleId, skill: STYLE_SKILL_VERSION[styleId as keyof typeof STYLE_SKILL_VERSION] } });
 });
+
+// 比基尼特辑兜底：输入缺少四要素时注入默认值，保证离线/兜底输出也能通过 SkillGuard
+function applyBikiniDefaults(outfit: string, location: string): { outfit: string; location: string } {
+  const hasColor = BIKINI_COLORS.some((c) => outfit.includes(c));
+  const hasCut = BIKINI_CUTS.some((c) => outfit.includes(c));
+  const hasFabric = BIKINI_FABRICS.some((c) => outfit.includes(c));
+  const hasLocation = BIKINI_LOCATIONS.some((c) => location.includes(c));
+  return {
+    outfit: hasColor && hasCut && hasFabric ? outfit : '奶油白系带三角比基尼，面料细罗纹弹力针织配蕾丝滚边',
+    location: hasLocation ? location : '冲绳青之洞窟浅滩礁石',
+  };
+}
 
 // API: AI Custom Prompt Generation based on selected presets or custom idea
 app.post('/api/generate-prompt', async (req, res) => {
@@ -105,16 +140,9 @@ app.post('/api/generate-prompt', async (req, res) => {
       let effectiveOutfit = outfit;
       let effectiveLocation = location;
       if (styleId === 'bikini') {
-        const hasColor = ['奶油白','珍珠粉','薄荷绿','浅杏','燕麦','淡紫','淡蓝','浅橘','樱花粉','天蓝','珍珠白','鹅黄'].some((c) => outfit.includes(c));
-        const hasCut = ['系带三角','挂脖','荷叶边','蝴蝶结','连体','高腰','平角','抹胸','三角'].some((c) => outfit.includes(c));
-        const hasFabric = ['弹力针织','细罗纹','水洗棉','蕾丝','亚麻混纺','速干莱卡','莱卡'].some((c) => outfit.includes(c));
-        if (!hasColor || !hasCut || !hasFabric) {
-          effectiveOutfit = '奶油白系带三角比基尼，面料细罗纹弹力针织配蕾丝滚边';
-        }
-        const hasLocation = ['冲绳','青之洞窟','万座毛','古宇利','湘南','江之岛','伊豆','热海','镰仓','逗子','三浦','静冈','滨松','远州滩'].some((c) => location.includes(c));
-        if (!hasLocation) {
-          effectiveLocation = '冲绳青之洞窟浅滩礁石';
-        }
+        const defaults = applyBikiniDefaults(outfit, location);
+        effectiveOutfit = defaults.outfit;
+        effectiveLocation = defaults.location;
       }
       const rawZh = `${prefixZh} ${composition}，${effectiveLocation}，${beautyType}身姿自然舒展，神态清透从容，微风吹拂着乌黑长发。她身穿${effectiveOutfit}，面料随海风自然垂坠，细节考究。${lighting}，微光在锁骨与发丝边缘形成温润高光。呈现${filmTone}的纯净氧气感与电影呼吸感。`;
       const rawEn = `${prefixEn} editorial photobook, ${composition}, ${beautyType} at ${effectiveLocation}, relaxed and effortless graceful posture. Wearing ${effectiveOutfit}. ${lighting}, ${filmTone}, high-fashion cinematography, no artificial posing, pure summer vitality.`;
@@ -200,12 +228,9 @@ ${styleId === 'bikini' ? '- 比基尼特辑要求：必须明确比基尼颜色/
       let fbOutfit = outfit;
       let fbLocation = location;
       if (styleId === 'bikini') {
-        const hasColor = ['奶油白','珍珠粉','薄荷绿','浅杏','燕麦','淡紫','淡蓝','浅橘','樱花粉','天蓝'].some((c) => outfit.includes(c));
-        const hasCut = ['系带三角','挂脖','荷叶边','蝴蝶结','连体','高腰','平角','抹胸'].some((c) => outfit.includes(c));
-        const hasFabric = ['弹力针织','细罗纹','水洗棉','蕾丝','亚麻混纺','速干莱卡'].some((c) => outfit.includes(c));
-        if (!hasColor || !hasCut || !hasFabric) fbOutfit = '奶油白系带三角比基尼，面料细罗纹弹力针织配蕾丝滚边';
-        const hasLoc = ['冲绳','青之洞窟','万座毛','古宇利','湘南','江之岛','伊豆','热海','镰仓','逗子','三浦','静冈','滨松','远州滩'].some((c) => location.includes(c));
-        if (!hasLoc) fbLocation = '冲绳青之洞窟浅滩礁石';
+        const defaults = applyBikiniDefaults(outfit, location);
+        fbOutfit = defaults.outfit;
+        fbLocation = defaults.location;
       }
       const fallbackZh = `${composition}，${fbLocation}，${beautyType}身姿自然舒展，神态清透从容，微风轻拂黑发。她身穿${fbOutfit}，面料随风飘拂。${lighting}，锁骨与发丝被镀上温润微光，呈现${filmTone}的纯净氧气感与${styleLabel}氛围。`;
       const fallbackEn = `Cinematic ${styleLabel} summer photography, ${composition}, ${beautyType} at ${fbLocation}, effortless natural posture. Wearing ${fbOutfit}. ${lighting}, high-fashion film grain, pure oxygen mood.`;
@@ -307,6 +332,11 @@ ${styleId === 'bikini' ? '- 比基尼特辑要求：必须明确比基尼颜色/
 
 // Start Express server and setup Vite
 async function startServer() {
+  // 未知 /api/* 路由返回 JSON 404，而不是回退到 SPA 页面返回 200
+  app.use('/api', (req, res) => {
+    res.status(404).json({ success: false, message: '接口不存在' });
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -315,11 +345,30 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    // Vite 产物带 hash 指纹：/assets/* 长期缓存，index.html 不缓存
+    app.use(express.static(distPath, {
+      setHeaders: (res, filePath) => {
+        if (filePath.includes('/assets/')) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        } else {
+          res.setHeader('Cache-Control', 'no-cache');
+        }
+      },
+    }));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
+
+  // 全局错误处理：非法 JSON 返回 400 JSON，而不是 Express 默认 HTML 错误页
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err instanceof SyntaxError && 'body' in err) {
+      return res.status(400).json({ success: false, message: '请求 JSON 格式错误' });
+    }
+    console.error('Unhandled server error:', err);
+    if (res.headersSent) return next(err);
+    return res.status(500).json({ success: false, message: '服务器内部错误' });
+  });
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Vogue HK Photobook Director server running on http://0.0.0.0:${PORT}`);

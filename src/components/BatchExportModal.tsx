@@ -99,6 +99,9 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
     return '';
   };
 
+  // 预览内容只计算一次（此前渲染时被重复计算三次）
+  const exportContent = generateExportContent();
+
   const handleCopyAll = () => {
     const text = generateExportContent();
     navigator.clipboard.writeText(text);
@@ -151,7 +154,7 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
               </h2>
             </div>
             <p className="text-xs text-[#888888] font-serif-hk mt-1">
-              一键打包 50 组纯净连贯中文自然语言生图词，适配 Midjourney, Stable Diffusion, FLUX, 剪映等
+              一键打包 {targetPrompts.length} 组纯净连贯中文自然语言生图词，适配 Midjourney, Stable Diffusion, FLUX, 剪映等
             </p>
           </div>
 
@@ -281,8 +284,8 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
             <span>UTF-8 ENCODED</span>
           </div>
           <pre className="whitespace-pre-wrap leading-relaxed select-text font-serif-hk text-[#b5b5b5]">
-            {generateExportContent().slice(0, 3000)}
-            {generateExportContent().length > 3000 && '\n\n... (更多内容将在导出文件中完整呈现) ...'}
+            {exportContent.slice(0, 3000)}
+            {exportContent.length > 3000 && '\n\n... (更多内容将在导出文件中完整呈现) ...'}
           </pre>
         </div>
 

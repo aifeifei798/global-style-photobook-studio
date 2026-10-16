@@ -10,6 +10,7 @@ interface PromptGeneratorModalProps {
   onClose: () => void;
   initialPreset?: PresetItem | null;
   initialStyle?: StyleId;
+  initialPrompt?: PhotobookPrompt | null;
   onSavePrompt: (prompt: PhotobookPrompt) => void;
   onShowToast: (msg: string) => void;
 }
@@ -32,6 +33,7 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
   onClose,
   initialPreset,
   initialStyle,
+  initialPrompt,
   onSavePrompt,
   onShowToast,
 }) => {
@@ -43,6 +45,7 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
   const scenePresets = filteredPresets.filter((p) => p.category === 'scene');
   const compositionPresets = filteredPresets.filter((p) => p.category === 'composition');
   const lightingPresets = filteredPresets.filter((p) => p.category === 'lighting');
+  const filmPresets = filteredPresets.filter((p) => p.category === 'film');
 
   const themes = THEMES_BY_STYLE[style] || ALL_THEMES;
 
@@ -52,6 +55,7 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
   const [selectedScene, setSelectedScene] = useState(scenePresets[0]?.name || '');
   const [selectedComposition, setSelectedComposition] = useState(compositionPresets[0]?.name || '');
   const [selectedLighting, setSelectedLighting] = useState(lightingPresets[0]?.name || '');
+  const [selectedFilm, setSelectedFilm] = useState(filmPresets[0]?.name || '经典柯达Portra 400暖调微颗粒胶片质感');
   const [focalLength, setFocalLength] = useState('85mm');
   const [aspectRatio, setAspectRatio] = useState('3:4');
   const [customKeywords, setCustomKeywords] = useState('');
@@ -78,14 +82,42 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
     }
   }, [initialPreset]);
 
+  // 「载入工作台」：把已有提示词卡片回填到生成器，实现真正的编辑复用
+  useEffect(() => {
+    if (initialPrompt) {
+      setStyle(initialPrompt.style);
+      setTheme(initialPrompt.theme);
+      setSelectedBeauty(initialPrompt.beautyType);
+      setSelectedOutfit(initialPrompt.outfit);
+      setSelectedScene(initialPrompt.location);
+      setSelectedComposition(initialPrompt.composition);
+      setSelectedLighting(initialPrompt.lighting);
+      setSelectedFilm(initialPrompt.filmTone);
+      setFocalLength(initialPrompt.focalLength);
+      setAspectRatio(initialPrompt.aspectRatio);
+    }
+  }, [initialPrompt]);
+
+  // Esc 关闭弹窗
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   useEffect(() => {
     // when style changes, reset to first of filtered to avoid invalid selection
+    // （载入已有卡片时不重置，保留回填的字段）
+    if (initialPrompt && initialPrompt.style === style) return;
     setTheme(themes[0]);
     if (beautyPresets[0]) setSelectedBeauty(beautyPresets[0].name);
     if (outfitPresets[0]) setSelectedOutfit(outfitPresets[0].name);
     if (scenePresets[0]) setSelectedScene(scenePresets[0].name);
     if (compositionPresets[0]) setSelectedComposition(compositionPresets[0].name);
     if (lightingPresets[0]) setSelectedLighting(lightingPresets[0].name);
+    if (filmPresets[0]) setSelectedFilm(filmPresets[0].name);
   }, [style]);
 
   const activeMeta = STYLE_META[style];
@@ -99,8 +131,9 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
     const rs = scenePresets[Math.floor(Math.random() * scenePresets.length)]?.name || selectedScene;
     const rc = compositionPresets[Math.floor(Math.random() * compositionPresets.length)]?.name || selectedComposition;
     const rl = lightingPresets[Math.floor(Math.random() * lightingPresets.length)]?.name || selectedLighting;
+    const rfilm = filmPresets[Math.floor(Math.random() * filmPresets.length)]?.name || selectedFilm;
     const rf = FOCAL_LENGTHS[Math.floor(Math.random() * FOCAL_LENGTHS.length)];
-    setTheme(t); setSelectedBeauty(rb); setSelectedOutfit(ro); setSelectedScene(rs); setSelectedComposition(rc); setSelectedLighting(rl); setFocalLength(rf);
+    setTheme(t); setSelectedBeauty(rb); setSelectedOutfit(ro); setSelectedScene(rs); setSelectedComposition(rc); setSelectedLighting(rl); setSelectedFilm(rfilm); setFocalLength(rf);
     onShowToast(`🎲 已随机碰撞一套${activeMeta.label}写真组合`);
   };
 
@@ -115,11 +148,13 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
     const rsP = randPresets.filter((p) => p.category === 'scene');
     const rcP = randPresets.filter((p) => p.category === 'composition');
     const rlP = randPresets.filter((p) => p.category === 'lighting');
+    const rfP = randPresets.filter((p) => p.category === 'film');
     const rb = rbP[Math.floor(Math.random() * rbP.length)]?.name || '';
     const ro = roP[Math.floor(Math.random() * roP.length)]?.name || '';
     const rs = rsP[Math.floor(Math.random() * rsP.length)]?.name || '';
     const rc = rcP[Math.floor(Math.random() * rcP.length)]?.name || '';
     const rl = rlP[Math.floor(Math.random() * rlP.length)]?.name || '';
+    const rfilm = rfP[Math.floor(Math.random() * rfP.length)]?.name || '经典柯达Portra 400暖调微颗粒胶片质感';
     const rf = FOCAL_LENGTHS[Math.floor(Math.random() * FOCAL_LENGTHS.length)];
     const ra = ASPECT_RATIOS[Math.floor(Math.random() * ASPECT_RATIOS.length)];
 
@@ -140,7 +175,7 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
           composition: rc,
           lighting: rl,
           focalLength: rf,
-          filmTone: rl,
+          filmTone: rfilm,
           aspectRatio: ra,
           customKeywords: '',
         }),
@@ -152,15 +187,15 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
       } else throw new Error(resData.message);
     } catch {
       const meta = STYLE_META[randomStyle];
-      const fallbackZh = `${rc}，${rs}，${rb}身姿自然舒展，神态清透从容，微风轻拂黑发。她身穿${ro}，面料随风飘拂。${rl}，锁骨与发丝被镀上温润微光，充满${meta.tagline}氛围。`;
-      const fallbackEn = `Cinematic ${meta.enLabel} photography, ${rc}, ${rb} at ${rs}, effortless natural posture. Wearing ${ro}. ${rl}, high-fashion film grain.`;
-      setGeneratedPrompt({ id: `blind-${Date.now()}`, index: 99, title: `盲盒·${meta.label}·${t}`, theme: t, style: randomStyle, styleLabel: meta.label, beautyType: rb, outfit: ro, location: rs, composition: rc, lighting: rl, focalLength: rf, filmTone: rl, aspectRatio: ra, tags: [meta.label, t, '盲盒'], promptZh: fallbackZh, promptEn: fallbackEn } as PhotobookPrompt);
+      const fallbackZh = `${rc}，${rs}，${rb}身姿自然舒展，神态清透从容，微风轻拂黑发。她身穿${ro}，面料随风飘拂。${rl}，锁骨与发丝被镀上温润微光，呈现${rfilm}的胶片质感，充满${meta.tagline}氛围。`;
+      const fallbackEn = `Cinematic ${meta.enLabel} photography, ${rc}, ${rb} at ${rs}, effortless natural posture. Wearing ${ro}. ${rl}, ${rfilm}, high-fashion film grain.`;
+      setGeneratedPrompt({ id: `blind-${Date.now()}`, index: 99, title: `盲盒·${meta.label}·${t}`, theme: t, style: randomStyle, styleLabel: meta.label, beautyType: rb, outfit: ro, location: rs, composition: rc, lighting: rl, focalLength: rf, filmTone: rfilm, aspectRatio: ra, tags: [meta.label, t, '盲盒'], promptZh: fallbackZh, promptEn: fallbackEn } as PhotobookPrompt);
       onShowToast(`🎁 盲盒已生成（离线矩阵）· ${meta.label}·${t}`);
     } finally {
       setIsBlindBoxLoading(false);
       // 同步 UI 表单为随机值（下一轮微任务）
       setTimeout(() => {
-        setTheme(t); setSelectedBeauty(rb); setSelectedOutfit(ro); setSelectedScene(rs); setSelectedComposition(rc); setSelectedLighting(rl); setFocalLength(rf); setAspectRatio(ra);
+        setTheme(t); setSelectedBeauty(rb); setSelectedOutfit(ro); setSelectedScene(rs); setSelectedComposition(rc); setSelectedLighting(rl); setSelectedFilm(rfilm); setFocalLength(rf); setAspectRatio(ra);
       }, 50);
     }
   };
@@ -180,7 +215,7 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
           composition: selectedComposition,
           lighting: selectedLighting,
           focalLength,
-          filmTone: selectedLighting,
+          filmTone: selectedFilm,
           aspectRatio,
           customKeywords,
         }),
@@ -191,10 +226,10 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
         onShowToast(`✨ ${activeMeta.label}视觉总监 AI 创作完成！`);
       } else throw new Error(resData.message || '生成失败');
     } catch (error: any) {
-      const fallbackZh = `${selectedComposition}，${selectedScene}，${selectedBeauty}身姿自然舒展，神态清透从容，微风轻拂黑发。她身穿${selectedOutfit}，面料随风飘拂。${selectedLighting}，锁骨与发丝被镀上温润微光，充满${activeMeta.tagline}氛围。`;
-      const fallbackEn = `Cinematic ${activeMeta.enLabel} photography, ${selectedComposition}, ${selectedBeauty} at ${selectedScene}, effortless natural posture. Wearing ${selectedOutfit}. ${selectedLighting}, high-fashion film grain, pure oxygen mood.`;
+      const fallbackZh = `${selectedComposition}，${selectedScene}，${selectedBeauty}身姿自然舒展，神态清透从容，微风轻拂黑发。她身穿${selectedOutfit}，面料随风飘拂。${selectedLighting}，锁骨与发丝被镀上温润微光，呈现${selectedFilm}的胶片质感，充满${activeMeta.tagline}氛围。`;
+      const fallbackEn = `Cinematic ${activeMeta.enLabel} photography, ${selectedComposition}, ${selectedBeauty} at ${selectedScene}, effortless natural posture. Wearing ${selectedOutfit}. ${selectedLighting}, ${selectedFilm}, high-fashion film grain, pure oxygen mood.`;
       const fallbackPrompt: PhotobookPrompt = {
-        id: `custom-${Date.now()}`, index: 99, title: `定制·${theme}夏日写真`, theme, style, styleLabel: activeMeta.label, beautyType: selectedBeauty, outfit: selectedOutfit, location: selectedScene, composition: selectedComposition, lighting: selectedLighting, focalLength, filmTone: selectedLighting, aspectRatio, tags: [theme, activeMeta.label, '高定写真'], promptZh: fallbackZh, promptEn: fallbackEn,
+        id: `custom-${Date.now()}`, index: 99, title: `定制·${theme}夏日写真`, theme, style, styleLabel: activeMeta.label, beautyType: selectedBeauty, outfit: selectedOutfit, location: selectedScene, composition: selectedComposition, lighting: selectedLighting, focalLength, filmTone: selectedFilm, aspectRatio, tags: [theme, activeMeta.label, '高定写真'], promptZh: fallbackZh, promptEn: fallbackEn,
       };
       setGeneratedPrompt(fallbackPrompt);
       onShowToast('已基于高定矩阵生成写真提示词');
@@ -276,9 +311,15 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">6. 光影氛围与胶片影调 ({lightingPresets.length} 预设)</label>
+              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">6. 光影氛围 ({lightingPresets.length} 预设)</label>
               <select value={selectedLighting} onChange={(e) => setSelectedLighting(e.target.value)} className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#e5e5e5] focus:outline-none">
                 {lightingPresets.map((p) => <option key={p.id} value={p.name} className="bg-[#1a1a1a] text-white">{p.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">7. 胶片影调 ({filmPresets.length} 预设)</label>
+              <select value={selectedFilm} onChange={(e) => setSelectedFilm(e.target.value)} className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#e5e5e5] focus:outline-none">
+                {filmPresets.map((p) => <option key={p.id} value={p.name} className="bg-[#1a1a1a] text-white">{p.name}</option>)}
               </select>
             </div>
             <div className="grid grid-cols-2 gap-2">

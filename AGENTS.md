@@ -5,18 +5,18 @@
 - `npm run build` — `vite build` (frontend) + `esbuild server.ts --bundle --platform=node --format=cjs --packages=external -> dist/server.cjs`.
 - `npm start` — `node dist/server.cjs` serves `dist/` statically; requires prior `build`.
 - `npm run lint` — actually `tsc --noEmit` (typecheck only, no ESLint/Prettier).
+- `npm run test` — `tsx --test test/*.test.ts` (node:test) covering `skillGuard.ts` and `formatPrompt.ts`. No CI/pre-commit config.
 - `npm run clean` — `rm -rf dist server.js`.
-- No test suite exists; no `test` script, no CI/pre-commit config.
 
 ## Architecture
 - Single-package app, not a monorepo. Two entrypoints: `server.ts` (Express API + Vite SSR/dev) and `src/main.tsx` -> `src/App.tsx`.
 - Dev: `server.ts:309` creates Vite in `middlewareMode` and mounts `vite.middlewares`. Prod: serves `dist/` static + SPA fallback `* -> index.html`.
 - Frontend: React 19 + Vite 6 + Tailwind 4 via `@tailwindcss/vite` (`src/index.css` has only `@import "tailwindcss"`). `@vitejs/plugin-react` for JSX.
 - Path alias `@` resolves to repo root (`.`) per `vite.config.ts:71` and `tsconfig.json:18` (`@/* -> ./*`).
-- Data layer: `src/data/styleConfig.ts` (6 `StyleMeta`), `src/data/presets_*.ts` (374 presets), `src/data/curated_*.ts` + `curatedAll.ts` (92 curated prompts), `src/utils/formatPrompt.ts` (flux/mj/en switch).
+- Data layer: `src/data/styleConfig.ts` (6 `StyleMeta`), `src/data/presets_*.ts` + `presetsData.ts` (382 presets, incl. 8 global `film` 胶片影调 presets), `src/data/curated_*.ts` + `curatedAll.ts` (92 curated prompts), `src/utils/formatPrompt.ts` (flux/mj/en switch).
 
 ## Env & Server
-- `import 'dotenv/config'` in `server.ts:1` loads `.env` and `.env.local` (both gitignored except `.env.example`).
+- `import 'dotenv/config'` in `server.ts:1` loads `.env` (Vite separately loads `.env.local` for the frontend; both gitignored except `.env.example`).
 - Required: `OPENAI_API_KEY` (if absent, `/api/generate-prompt` falls back to deterministic handcrafted generator — `server.ts:82`). Optional: `OPENAI_MODEL` (default `gpt-4o-mini`), `OPENAI_BASE_URL`, `PORT` (default `3000`), `APP_URL`. `GEMINI_API_KEY` is legacy, only echoed in `/api/health`.
 - Dual lockfiles present: `bun.lock` + `package-lock.json`; either `npm install` or `bun install` works but keep both in sync.
 - Node 18+ required.

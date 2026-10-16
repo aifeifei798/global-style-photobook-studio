@@ -46,7 +46,8 @@ export const PresetLibraryModal: React.FC<PresetLibraryModalProps> = ({
     { id: 'outfit', label: `👗 穿搭 (${ALL_PRESETS.filter((p) => p.category === 'outfit').length})` },
     { id: 'scene', label: `🏖️ 场景 (${ALL_PRESETS.filter((p) => p.category === 'scene').length})` },
     { id: 'composition', label: `📐 构图 (${ALL_PRESETS.filter((p) => p.category === 'composition').length})` },
-    { id: 'lighting', label: `🎞️ 光影 (${ALL_PRESETS.filter((p) => p.category === 'lighting').length})` },
+    { id: 'lighting', label: `💡 光影 (${ALL_PRESETS.filter((p) => p.category === 'lighting').length})` },
+    { id: 'film', label: `🎞️ 胶片 (${ALL_PRESETS.filter((p) => p.category === 'film').length})` },
   ];
 
   const handleCopy = (preset: PresetItem) => {

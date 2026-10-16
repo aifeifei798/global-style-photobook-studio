@@ -158,7 +158,7 @@ app.post('/api/generate-prompt', async (req, res) => {
       filmTone = '柯达Portra 400暖调微颗粒胶片',
       aspectRatio = '3:4',
       customKeywords = '',
-      lang = 'zh',
+      lang = 'en',
     } = req.body;
 
     const styleId = isValidStyle(style) ? style : 'hk';

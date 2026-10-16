@@ -42,12 +42,12 @@ export default function App() {
     favoritesOnly: false,
   });
 
-  // UI language (zh default, persisted)
+  // UI language (en default, persisted)
   const [lang, setLang] = useState<Lang>(() => {
     try {
-      return localStorage.getItem('studio_lang') === 'en' ? 'en' : 'zh';
+      return localStorage.getItem('studio_lang') === 'zh' ? 'zh' : 'en';
     } catch {
-      return 'zh';
+      return 'en';
     }
   });
   useEffect(() => {

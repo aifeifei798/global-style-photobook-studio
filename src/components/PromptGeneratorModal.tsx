@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Sparkles, Dices, Copy, Check, Save, Loader2, Shuffle, Zap } from 'lucide-react';
+import { X, Sparkles, Dices, Copy, Check, Save, Loader2, Shuffle } from 'lucide-react';
 import { ALL_PRESETS } from '../data/presetsData';
 import { PhotobookPrompt, PresetItem, StyleId } from '../types';
 import { STYLE_META, STYLE_IDS } from '../data/styleConfig';
 import { formatPrompt, PromptFormat, FORMAT_META } from '../utils/formatPrompt';
+import { Lang, themeName } from '../i18n';
+import { localizePreset } from '../data/localized';
 
 interface PromptGeneratorModalProps {
   isOpen: boolean;
@@ -13,6 +15,7 @@ interface PromptGeneratorModalProps {
   initialPrompt?: PhotobookPrompt | null;
   onSavePrompt: (prompt: PhotobookPrompt) => void;
   onShowToast: (msg: string) => void;
+  lang: Lang;
 }
 
 const THEMES_BY_STYLE: Record<string, string[]> = {
@@ -36,8 +39,10 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
   initialPrompt,
   onSavePrompt,
   onShowToast,
+  lang,
 }) => {
   const [style, setStyle] = useState<StyleId>(initialStyle || 'hk');
+  const zh = lang === 'zh';
 
   const filteredPresets = useMemo(() => ALL_PRESETS.filter((p) => !p.style || p.style === style), [style]);
   const beautyPresets = filteredPresets.filter((p) => p.category === 'beauty');
@@ -64,7 +69,7 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
   const [isBlindBoxLoading, setIsBlindBoxLoading] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState<PhotobookPrompt | null>(null);
   const [copiedFormat, setCopiedFormat] = useState<PromptFormat | null>(null);
-  const [format, setFormat] = useState<PromptFormat>('flux');
+  const [format, setFormat] = useState<PromptFormat>(lang === 'en' ? 'en' : 'flux');
 
   useEffect(() => {
     if (initialStyle) setStyle(initialStyle);
@@ -125,7 +130,7 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
   if (!isOpen) return null;
 
   const handleRandomize = () => {
-    const t = themes[Math.floor(Math.random() * themes.length)];
+    const randomTheme = themes[Math.floor(Math.random() * themes.length)];
     const rb = beautyPresets[Math.floor(Math.random() * beautyPresets.length)]?.name || selectedBeauty;
     const ro = outfitPresets[Math.floor(Math.random() * outfitPresets.length)]?.name || selectedOutfit;
     const rs = scenePresets[Math.floor(Math.random() * scenePresets.length)]?.name || selectedScene;
@@ -133,15 +138,15 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
     const rl = lightingPresets[Math.floor(Math.random() * lightingPresets.length)]?.name || selectedLighting;
     const rfilm = filmPresets[Math.floor(Math.random() * filmPresets.length)]?.name || selectedFilm;
     const rf = FOCAL_LENGTHS[Math.floor(Math.random() * FOCAL_LENGTHS.length)];
-    setTheme(t); setSelectedBeauty(rb); setSelectedOutfit(ro); setSelectedScene(rs); setSelectedComposition(rc); setSelectedLighting(rl); setSelectedFilm(rfilm); setFocalLength(rf);
-    onShowToast(`🎲 已随机碰撞一套${activeMeta.label}写真组合`);
+    setTheme(randomTheme); setSelectedBeauty(rb); setSelectedOutfit(ro); setSelectedScene(rs); setSelectedComposition(rc); setSelectedLighting(rl); setSelectedFilm(rfilm); setFocalLength(rf);
+    onShowToast(zh ? `🎲 已随机碰撞一套${activeMeta.label}写真组合` : `🎲 Random ${activeMeta.shortLabel} combination generated`);
   };
 
   // 随机盲盒：一键随机全部维度并立即生成灵感卡片
   const handleBlindBox = async () => {
     const randomStyle = STYLE_IDS[Math.floor(Math.random() * STYLE_IDS.length)];
     const randomThemeList = THEMES_BY_STYLE[randomStyle] || ALL_THEMES;
-    const t = randomThemeList[Math.floor(Math.random() * randomThemeList.length)];
+    const randomTheme = randomThemeList[Math.floor(Math.random() * randomThemeList.length)];
     const randPresets = ALL_PRESETS.filter((p) => !p.style || p.style === randomStyle);
     const rbP = randPresets.filter((p) => p.category === 'beauty');
     const roP = randPresets.filter((p) => p.category === 'outfit');
@@ -168,7 +173,7 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           style: randomStyle,
-          theme: t,
+          theme: randomTheme,
           beautyType: rb,
           outfit: ro,
           location: rs,
@@ -178,25 +183,28 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
           filmTone: rfilm,
           aspectRatio: ra,
           customKeywords: '',
+          lang,
         }),
       });
       const resData = await response.json();
       if (response.status === 429) throw new Error('rate-limited');
       if (resData.success && resData.data) {
         setGeneratedPrompt(resData.data);
-        onShowToast(`🎁 盲盒开箱：${STYLE_META[randomStyle].label}·${t} 已生成灵感卡片！`);
+        onShowToast(zh ? `🎁 盲盒开箱：${STYLE_META[randomStyle].label}·${randomTheme} 已生成灵感卡片！` : `🎁 Blind box opened: ${STYLE_META[randomStyle].shortLabel} · ${themeName(lang, randomTheme)} — inspiration card generated!`);
       } else throw new Error(resData.message);
     } catch (error: any) {
       const meta = STYLE_META[randomStyle];
       const fallbackZh = `${rc}，${rs}，${rb}身姿自然舒展，神态清透从容，微风轻拂黑发。她身穿${ro}，面料随风飘拂。${rl}，锁骨与发丝被镀上温润微光，呈现${rfilm}的胶片质感，充满${meta.tagline}氛围。`;
       const fallbackEn = `Cinematic ${meta.enLabel} photography, ${rc}, ${rb} at ${rs}, effortless natural posture. Wearing ${ro}. ${rl}, ${rfilm}, high-fashion film grain.`;
-      setGeneratedPrompt({ id: `blind-${Date.now()}`, index: 99, title: `盲盒·${meta.label}·${t}`, theme: t, style: randomStyle, styleLabel: meta.label, beautyType: rb, outfit: ro, location: rs, composition: rc, lighting: rl, focalLength: rf, filmTone: rfilm, aspectRatio: ra, tags: [meta.label, t, '盲盒'], promptZh: fallbackZh, promptEn: fallbackEn } as PhotobookPrompt);
-      onShowToast(error?.message === 'rate-limited' ? '⏳ 请求过于频繁，盲盒已离线生成，稍后可重试 AI 增强' : `🎁 盲盒已生成（离线矩阵）· ${meta.label}·${t}`);
+      setGeneratedPrompt({ id: `blind-${Date.now()}`, index: 99, title: zh ? `盲盒·${meta.label}·${randomTheme}` : `Blind Box · ${meta.shortLabel} · ${themeName(lang, randomTheme)}`, theme: randomTheme, style: randomStyle, styleLabel: meta.label, beautyType: rb, outfit: ro, location: rs, composition: rc, lighting: rl, focalLength: rf, filmTone: rfilm, aspectRatio: ra, tags: [meta.label, randomTheme, '盲盒'], promptZh: fallbackZh, promptEn: fallbackEn } as PhotobookPrompt);
+      onShowToast(error?.message === 'rate-limited'
+        ? (zh ? '⏳ 请求过于频繁，盲盒已离线生成，稍后可重试 AI 增强' : '⏳ Too many requests — blind box generated offline, retry AI later')
+        : (zh ? `🎁 盲盒已生成（离线矩阵）· ${meta.label}·${randomTheme}` : `🎁 Blind box generated (offline matrix) · ${meta.shortLabel} · ${themeName(lang, randomTheme)}`));
     } finally {
       setIsBlindBoxLoading(false);
       // 同步 UI 表单为随机值（下一轮微任务）
       setTimeout(() => {
-        setTheme(t); setSelectedBeauty(rb); setSelectedOutfit(ro); setSelectedScene(rs); setSelectedComposition(rc); setSelectedLighting(rl); setSelectedFilm(rfilm); setFocalLength(rf); setAspectRatio(ra);
+        setTheme(randomTheme); setSelectedBeauty(rb); setSelectedOutfit(ro); setSelectedScene(rs); setSelectedComposition(rc); setSelectedLighting(rl); setSelectedFilm(rfilm); setFocalLength(rf); setAspectRatio(ra);
       }, 50);
     }
   };
@@ -219,22 +227,25 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
           filmTone: selectedFilm,
           aspectRatio,
           customKeywords,
+          lang,
         }),
       });
       const resData = await response.json();
       if (response.status === 429) throw new Error('rate-limited');
       if (resData.success && resData.data) {
         setGeneratedPrompt(resData.data);
-        onShowToast(`✨ ${activeMeta.label}视觉总监 AI 创作完成！`);
-      } else throw new Error(resData.message || '生成失败');
+        onShowToast(zh ? `✨ ${activeMeta.label}视觉总监 AI 创作完成！` : `✨ ${activeMeta.shortLabel} AI director creation complete!`);
+      } else throw new Error(resData.message || 'Generation failed');
     } catch (error: any) {
       const fallbackZh = `${selectedComposition}，${selectedScene}，${selectedBeauty}身姿自然舒展，神态清透从容，微风轻拂黑发。她身穿${selectedOutfit}，面料随风飘拂。${selectedLighting}，锁骨与发丝被镀上温润微光，呈现${selectedFilm}的胶片质感，充满${activeMeta.tagline}氛围。`;
       const fallbackEn = `Cinematic ${activeMeta.enLabel} photography, ${selectedComposition}, ${selectedBeauty} at ${selectedScene}, effortless natural posture. Wearing ${selectedOutfit}. ${selectedLighting}, ${selectedFilm}, high-fashion film grain, pure oxygen mood.`;
       const fallbackPrompt: PhotobookPrompt = {
-        id: `custom-${Date.now()}`, index: 99, title: `定制·${theme}夏日写真`, theme, style, styleLabel: activeMeta.label, beautyType: selectedBeauty, outfit: selectedOutfit, location: selectedScene, composition: selectedComposition, lighting: selectedLighting, focalLength, filmTone: selectedFilm, aspectRatio, tags: [theme, activeMeta.label, '高定写真'], promptZh: fallbackZh, promptEn: fallbackEn,
+        id: `custom-${Date.now()}`, index: 99, title: zh ? `定制·${theme}夏日写真` : `Custom · ${themeName(lang, theme)} Summer Shots`, theme, style, styleLabel: activeMeta.label, beautyType: selectedBeauty, outfit: selectedOutfit, location: selectedScene, composition: selectedComposition, lighting: selectedLighting, focalLength, filmTone: selectedFilm, aspectRatio, tags: [theme, activeMeta.label, '高定写真'], promptZh: fallbackZh, promptEn: fallbackEn,
       };
       setGeneratedPrompt(fallbackPrompt);
-      onShowToast(error?.message === 'rate-limited' ? '⏳ 请求过于频繁，已离线生成，稍后可重试 AI 增强' : '已基于高定矩阵生成写真提示词');
+      onShowToast(error?.message === 'rate-limited'
+        ? (zh ? '⏳ 请求过于频繁，已离线生成，稍后可重试 AI 增强' : '⏳ Too many requests — generated offline, retry AI later')
+        : (zh ? '已基于高定矩阵生成写真提示词' : 'Prompt generated from the couture matrix'));
     } finally { setIsLoading(false); }
   };
 
@@ -244,9 +255,9 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
     navigator.clipboard.writeText(text);
     setCopiedFormat(fmt);
     setTimeout(() => setCopiedFormat(null), 2000);
-    onShowToast(`已复制 ${FORMAT_META[fmt].label} · ${generatedPrompt.title}`);
+    onShowToast(zh ? `已复制 ${FORMAT_META[fmt].label} · ${generatedPrompt.title}` : `Copied ${FORMAT_META[fmt].label} · ${generatedPrompt.title}`);
   };
-  const handleSaveToPhotobook = () => { if (generatedPrompt) { onSavePrompt(generatedPrompt); onShowToast(`已将「${generatedPrompt.title}」存入写真集！`); onClose(); } };
+  const handleSaveToPhotobook = () => { if (generatedPrompt) { onSavePrompt(generatedPrompt); onShowToast(zh ? `已将「${generatedPrompt.title}」存入写真集！` : `Saved "${generatedPrompt.title}" to the lookbook!`); onClose(); } };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -255,98 +266,98 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-cinzel font-bold px-2.5 py-0.5 rounded border tracking-wider" style={{ color: activeMeta.accent, background: `${activeMeta.accent}18`, borderColor: `${activeMeta.accent}60` }}>AI STUDIO DIRECTOR · {activeMeta.enLabel}</span>
-              <h2 className="text-xl font-bold font-serif-hk text-white">《{activeMeta.label}》写真总监 AI 灵感工作台</h2>
+              <h2 className="text-xl font-bold font-serif-hk text-white">{zh ? `《${activeMeta.label}》写真总监 AI 灵感工作台` : `"${activeMeta.shortLabel}" AI Studio Director`}</h2>
             </div>
-            <p className="text-xs text-[#888888] font-serif-hk mt-1">当前风格：{activeMeta.description} · {activeMeta.tagline} · 自由组合五大维度</p>
+            <p className="text-xs text-[#888888] font-serif-hk mt-1">{zh ? `当前风格：${activeMeta.description} · ${activeMeta.tagline} · 自由组合五大维度` : `Current style: ${activeMeta.descriptionEn} · ${activeMeta.taglineEn} · freely combine five dimensions`}</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg text-[#666666] hover:text-white hover:bg-[#1a1a1a]"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 bg-[#161616] p-3 rounded-xl border border-[#262626]">
-            <span className="text-xs text-[#999999] font-serif-hk">💡 严禁男友视角 · 严禁机械摆拍 · 严格无方括号与加号</span>
+            <span className="text-xs text-[#999999] font-serif-hk">{zh ? '💡 严禁男友视角 · 严禁机械摆拍 · 严格无方括号与加号' : '💡 No boyfriend-POV · no mechanical posing · strictly no brackets or plus signs'}</span>
             <div className="flex items-center gap-1.5">
-              <button onClick={handleRandomize} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#222222] hover:bg-[#2c2c2c] text-xs font-medium border border-[#333333] transition-all shadow-xs" style={{ color: activeMeta.accent }}><Dices className="w-3.5 h-3.5" style={{ color: activeMeta.accent }} /><span>随机碰撞</span></button>
-              <button onClick={handleBlindBox} disabled={isBlindBoxLoading || isLoading} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-black text-xs font-bold border transition-all shadow-md disabled:opacity-50" style={{ background: activeMeta.accent, borderColor: activeMeta.accent }}><Shuffle className={`w-3.5 h-3.5 ${isBlindBoxLoading ? 'animate-spin' : ''}`} /><span>{isBlindBoxLoading ? '盲盒开箱中...' : '🎲 随机盲盒'}</span></button>
+              <button onClick={handleRandomize} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#222222] hover:bg-[#2c2c2c] text-xs font-medium border border-[#333333] transition-all shadow-xs" style={{ color: activeMeta.accent }}><Dices className="w-3.5 h-3.5" style={{ color: activeMeta.accent }} /><span>{zh ? '随机碰撞' : 'Randomize'}</span></button>
+              <button onClick={handleBlindBox} disabled={isBlindBoxLoading || isLoading} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-black text-xs font-bold border transition-all shadow-md disabled:opacity-50" style={{ background: activeMeta.accent, borderColor: activeMeta.accent }}><Shuffle className={`w-3.5 h-3.5 ${isBlindBoxLoading ? 'animate-spin' : ''}`} /><span>{isBlindBoxLoading ? (zh ? '盲盒开箱中...' : 'Opening blind box...') : (zh ? '🎲 随机盲盒' : '🎲 Random blind box')}</span></button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">0. 风格体系</label>
+              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">{zh ? '0. 风格体系' : '0. Style system'}</label>
               <div className="flex flex-wrap gap-1.5">
                 {STYLE_IDS.map((sid) => {
                   const meta = STYLE_META[sid];
                   const active = style === sid;
-                  return <button key={sid} onClick={() => setStyle(sid)} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1 ${active ? 'text-black' : 'bg-[#161616] text-[#888888] border-[#2a2a2a] hover:text-white'}`} style={active ? { background: meta.accent, borderColor: meta.accent } : {}}>{meta.icon} {meta.label}</button>;
+                  return <button key={sid} onClick={() => setStyle(sid)} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1 ${active ? 'text-black' : 'bg-[#161616] text-[#888888] border-[#2a2a2a] hover:text-white'}`} style={active ? { background: meta.accent, borderColor: meta.accent } : {}}>{meta.icon} {zh ? meta.label : meta.shortLabel}</button>;
                 })}
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">1. 写真主题系列</label>
+              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">{zh ? '1. 写真主题系列' : '1. Theme series'}</label>
               <select value={theme} onChange={(e) => setTheme(e.target.value)} className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#e5e5e5] focus:outline-none" style={{ borderColor: `${activeMeta.accent}40` }}>
-                {themes.map((t) => <option key={t} value={t} className="bg-[#1a1a1a] text-white">{t}</option>)}
+                {themes.map((th) => <option key={th} value={th} className="bg-[#1a1a1a] text-white">{zh ? th : themeName(lang, th) || th}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">2. 容颜神态与气质 ({beautyPresets.length} 预设)</label>
+              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">{zh ? `2. 容颜神态与气质 (${beautyPresets.length} 预设)` : `2. Expression & mood (${beautyPresets.length} presets)`}</label>
               <select value={selectedBeauty} onChange={(e) => setSelectedBeauty(e.target.value)} className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#e5e5e5] focus:outline-none">
-                {beautyPresets.map((p) => <option key={p.id} value={p.name} className="bg-[#1a1a1a] text-white">{p.name}</option>)}
+                {beautyPresets.map((p) => <option key={p.id} value={p.name} className="bg-[#1a1a1a] text-white">{zh ? p.name : localizePreset(p, lang).name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">3. 高定穿搭与面料 ({outfitPresets.length} 预设)</label>
+              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">{zh ? `3. 高定穿搭与面料 (${outfitPresets.length} 预设)` : `3. Outfit & fabric (${outfitPresets.length} presets)`}</label>
               <select value={selectedOutfit} onChange={(e) => setSelectedOutfit(e.target.value)} className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#e5e5e5] focus:outline-none">
-                {outfitPresets.map((p) => <option key={p.id} value={p.name} className="bg-[#1a1a1a] text-white">{p.name}</option>)}
+                {outfitPresets.map((p) => <option key={p.id} value={p.name} className="bg-[#1a1a1a] text-white">{zh ? p.name : localizePreset(p, lang).name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">4. 拍摄取景与地标 ({scenePresets.length} 预设)</label>
+              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">{zh ? `4. 拍摄取景与地标 (${scenePresets.length} 预设)` : `4. Location & landmarks (${scenePresets.length} presets)`}</label>
               <select value={selectedScene} onChange={(e) => setSelectedScene(e.target.value)} className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#e5e5e5] focus:outline-none">
-                {scenePresets.map((p) => <option key={p.id} value={p.name} className="bg-[#1a1a1a] text-white">{p.name}</option>)}
+                {scenePresets.map((p) => <option key={p.id} value={p.name} className="bg-[#1a1a1a] text-white">{zh ? p.name : localizePreset(p, lang).name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">5. 构图景别与透视 ({compositionPresets.length} 预设)</label>
+              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">{zh ? `5. 构图景别与透视 (${compositionPresets.length} 预设)` : `5. Framing & perspective (${compositionPresets.length} presets)`}</label>
               <select value={selectedComposition} onChange={(e) => setSelectedComposition(e.target.value)} className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#e5e5e5] focus:outline-none">
-                {compositionPresets.map((p) => <option key={p.id} value={p.name} className="bg-[#1a1a1a] text-white">{p.name}</option>)}
+                {compositionPresets.map((p) => <option key={p.id} value={p.name} className="bg-[#1a1a1a] text-white">{zh ? p.name : localizePreset(p, lang).name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">6. 光影氛围 ({lightingPresets.length} 预设)</label>
+              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">{zh ? `6. 光影氛围 (${lightingPresets.length} 预设)` : `6. Lighting mood (${lightingPresets.length} presets)`}</label>
               <select value={selectedLighting} onChange={(e) => setSelectedLighting(e.target.value)} className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#e5e5e5] focus:outline-none">
-                {lightingPresets.map((p) => <option key={p.id} value={p.name} className="bg-[#1a1a1a] text-white">{p.name}</option>)}
+                {lightingPresets.map((p) => <option key={p.id} value={p.name} className="bg-[#1a1a1a] text-white">{zh ? p.name : localizePreset(p, lang).name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">7. 胶片影调 ({filmPresets.length} 预设)</label>
+              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">{zh ? `7. 胶片影调 (${filmPresets.length} 预设)` : `7. Film tone (${filmPresets.length} presets)`}</label>
               <select value={selectedFilm} onChange={(e) => setSelectedFilm(e.target.value)} className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#e5e5e5] focus:outline-none">
-                {filmPresets.map((p) => <option key={p.id} value={p.name} className="bg-[#1a1a1a] text-white">{p.name}</option>)}
+                {filmPresets.map((p) => <option key={p.id} value={p.name} className="bg-[#1a1a1a] text-white">{zh ? p.name : localizePreset(p, lang).name}</option>)}
               </select>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div><label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">镜头焦段</label><select value={focalLength} onChange={(e) => setFocalLength(e.target.value)} className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#e5e5e5]">{FOCAL_LENGTHS.map((f) => <option key={f} value={f} className="bg-[#1a1a1a] text-white">{f}</option>)}</select></div>
-              <div><label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">生图画幅比例</label><select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#e5e5e5]">{ASPECT_RATIOS.map((ar) => <option key={ar} value={ar} className="bg-[#1a1a1a] text-white">{ar}</option>)}</select></div>
+              <div><label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">{zh ? '镜头焦段' : 'Focal length'}</label><select value={focalLength} onChange={(e) => setFocalLength(e.target.value)} className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#e5e5e5]">{FOCAL_LENGTHS.map((f) => <option key={f} value={f} className="bg-[#1a1a1a] text-white">{f}</option>)}</select></div>
+              <div><label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">{zh ? '生图画幅比例' : 'Aspect ratio'}</label><select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#e5e5e5]">{ASPECT_RATIOS.map((ar) => <option key={ar} value={ar} className="bg-[#1a1a1a] text-white">{ar}</option>)}</select></div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">附加个性化细节 (可选)</label>
-              <input type="text" placeholder={style==='bikini' ? '例如：薄荷绿蕾丝边系带、冲绳青之洞窟礁石、珍珠白荷叶边...' : '例如：发丝沾着微细水珠、手中握着青椰、落日晚霞染红海面...'} value={customKeywords} onChange={(e) => setCustomKeywords(e.target.value)} className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#e5e5e5] placeholder:text-[#666666] focus:outline-none" />
+              <label className="block text-xs font-semibold text-[#cccccc] mb-1.5 font-serif-hk">{zh ? '附加个性化细节 (可选)' : 'Extra personal details (optional)'}</label>
+              <input type="text" placeholder={zh ? (style === 'bikini' ? '例如：薄荷绿蕾丝边系带、冲绳青之洞窟礁石、珍珠白荷叶边...' : '例如：发丝沾着微细水珠、手中握着青椰、落日晚霞染红海面...') : (style === 'bikini' ? 'e.g. mint-green lace-up ties, Okinawa cave reefs, pearl-white ruffles...' : 'e.g. hair dotted with fine water droplets, holding a green coconut, sunset dyeing the sea...')} value={customKeywords} onChange={(e) => setCustomKeywords(e.target.value)} className="w-full bg-[#161616] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs sm:text-sm text-[#e5e5e5] placeholder:text-[#666666] focus:outline-none" />
             </div>
           </div>
 
           <div className="pt-2">
             <button id="btn-trigger-ai-generation" onClick={handleGenerate} disabled={isLoading} className="w-full py-3.5 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg transition-all disabled:opacity-50 active:scale-99" style={{ background: activeMeta.accent, color: '#000' }}>
-              {isLoading ? <><Loader2 className="w-5 h-5 animate-spin" /><span>视觉总监 AI 正在构思{activeMeta.label}提示词...</span></> : <><Sparkles className="w-5 h-5" /><span>生成{activeMeta.label}高定写真提示词 (纯净无加号)</span></>}
+              {isLoading ? <><Loader2 className="w-5 h-5 animate-spin" /><span>{zh ? `视觉总监 AI 正在构思${activeMeta.label}提示词...` : `AI director is composing ${activeMeta.shortLabel} prompts...`}</span></> : <><Sparkles className="w-5 h-5" /><span>{zh ? `生成${activeMeta.label}高定写真提示词 (纯净无加号)` : `Generate ${activeMeta.shortLabel} couture photobook prompts (clean, no plus signs)`}</span></>}
             </button>
           </div>
 
           {generatedPrompt && (
             <div className="mt-4 p-4 sm:p-5 bg-[#0a0a0a] rounded-xl border border-[#282828] shadow-lg space-y-3 animate-in fade-in duration-300">
-              <div className="flex items-center justify-between"><span className="font-serif-hk font-bold text-white text-base">{generatedPrompt.title}</span><span className="text-xs px-2.5 py-0.5 rounded font-medium border" style={{ background: `${activeMeta.accent}18`, color: activeMeta.accent, borderColor: `${activeMeta.accent}60` }}>{generatedPrompt.theme} · {generatedPrompt.styleLabel || activeMeta.label}</span></div>
+              <div className="flex items-center justify-between"><span className="font-serif-hk font-bold text-white text-base">{generatedPrompt.title}</span><span className="text-xs px-2.5 py-0.5 rounded font-medium border" style={{ background: `${activeMeta.accent}18`, color: activeMeta.accent, borderColor: `${activeMeta.accent}60` }}>{zh ? generatedPrompt.theme : themeName(lang, generatedPrompt.theme)} · {zh ? (generatedPrompt.styleLabel || activeMeta.label) : activeMeta.shortLabel}</span></div>
               {(generatedPrompt as any).skill && (
                 <div className="flex items-center justify-between text-[11px] bg-[#141414] px-2.5 py-1.5 rounded-lg border border-[#222222]">
-                  <span className="text-[#888888]">Skill 控制：<span className="text-[#cccccc]">{(generatedPrompt as any).skill}</span></span>
-                  {(generatedPrompt as any).skillValid === false ? <span className="text-rose-400">⚠ {((generatedPrompt as any).skillErrors || []).slice(0,2).join('；')}</span> : <span className="text-emerald-400">✓ Skill 自检通过 · 单段无括号加号{ (generatedPrompt as any).style === 'bikini' ? ' · 四要素齐全' : ''}</span>}
+                  <span className="text-[#888888]">{zh ? 'Skill 控制：' : 'Skill control:'} <span className="text-[#cccccc]">{(generatedPrompt as any).skill}</span></span>
+                  {(generatedPrompt as any).skillValid === false ? <span className="text-rose-400">⚠ {((generatedPrompt as any).skillErrors || []).slice(0,2).join(zh ? '；' : '; ')}</span> : <span className="text-emerald-400">{zh ? '✓ Skill 自检通过 · 单段无括号加号' : '✓ Skill self-check passed · single paragraph, no brackets'}{(generatedPrompt as any).style === 'bikini' ? (zh ? ' · 四要素齐全' : ' · all four bikini elements present') : ''}</span>}
                 </div>
               )}
               {/* 格式快速切换器 */}
@@ -355,10 +366,10 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
                   <button key={f} onClick={() => setFormat(f)} className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all ${format===f ? 'text-black shadow-xs' : 'text-[#777777] hover:text-white'}`} style={format===f ? { background: activeMeta.accent } : {}}>{FORMAT_META[f].shortLabel} · {f==='flux' ? 'FLUX' : f==='mj' ? 'MJ' : 'EN'}</button>
                 ))}
               </div>
-              <div className="text-[11px] text-[#666666] -mt-1">{FORMAT_META[format].label} · {FORMAT_META[format].desc}{format==='mj' ? ` · ${generatedPrompt.aspectRatio} · v6.1` : ''}</div>
+              <div className="text-[11px] text-[#666666] -mt-1">{FORMAT_META[format].label} · {zh ? FORMAT_META[format].desc : FORMAT_META[format].descEn}{format==='mj' ? ` · ${generatedPrompt.aspectRatio} · v6.1` : ''}</div>
 
               <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs text-[#888888]"><span>输出预览 · {FORMAT_META[format].label}</span><button onClick={() => handleCopy(format)} className="font-medium inline-flex items-center gap-1" style={{ color: activeMeta.accent }}>{copiedFormat===format ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}<span>{copiedFormat===format ? '已复制' : `复制 ${FORMAT_META[format].shortLabel}`}</span></button></div>
+                <div className="flex items-center justify-between text-xs text-[#888888]"><span>{zh ? `输出预览 · ${FORMAT_META[format].label}` : `Output preview · ${FORMAT_META[format].label}`}</span><button onClick={() => handleCopy(format)} className="font-medium inline-flex items-center gap-1" style={{ color: activeMeta.accent }}>{copiedFormat===format ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}<span>{copiedFormat===format ? (zh ? '已复制' : 'Copied') : (zh ? `复制 ${FORMAT_META[format].shortLabel}` : `Copy ${FORMAT_META[format].shortLabel}`)}</span></button></div>
                 <div className="relative p-3 bg-[#141414] rounded-lg text-xs sm:text-sm leading-relaxed border border-[#222222] select-text" style={{ color: format==='en' ? '#a0a0a0' : '#d4d4d4' }}>
                   <p className={format==='en' ? 'font-sans text-xs leading-normal' : 'font-serif-hk'}>{formatPrompt(generatedPrompt, format)}</p>
                   {format==='mj' && <span className="absolute bottom-1 right-1 text-[9px] bg-[#1a1a1a] text-[#d4af37] border border-[#333] px-1.5 py-0.5 rounded font-mono">--ar {generatedPrompt.aspectRatio} --v 6.1 --style raw</span>}
@@ -373,14 +384,14 @@ export const PromptGeneratorModal: React.FC<PromptGeneratorModalProps> = ({
                 ))}
               </div>
 
-              <div className="pt-2 flex justify-end gap-2"><button onClick={handleSaveToPhotobook} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#222222] hover:bg-[#333333] border text-xs sm:text-sm font-semibold transition-all shadow-xs" style={{ color: activeMeta.accent, borderColor: `${activeMeta.accent}80` }}><Save className="w-4 h-4" /><span>收录至当前写真集</span></button></div>
+              <div className="pt-2 flex justify-end gap-2"><button onClick={handleSaveToPhotobook} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#222222] hover:bg-[#333333] border text-xs sm:text-sm font-semibold transition-all shadow-xs" style={{ color: activeMeta.accent, borderColor: `${activeMeta.accent}80` }}><Save className="w-4 h-4" /><span>{zh ? '收录至当前写真集' : 'Save to current lookbook'}</span></button></div>
             </div>
           )}
         </div>
 
         <div className="p-4 border-t border-[#222222] bg-[#0a0a0a] flex items-center justify-between text-xs text-[#666666]">
-          <span>基于 OpenAI {activeMeta.label}视觉总监模型 · {activeMeta.enLabel}</span>
-          <button onClick={onClose} className="px-4 py-1.5 rounded-lg bg-[#1a1a1a] text-[#cccccc] hover:bg-[#282828] font-medium transition-colors border border-[#333333]">关闭工作台</button>
+          <span>{zh ? `基于 OpenAI ${activeMeta.label}视觉总监模型 · ${activeMeta.enLabel}` : `Powered by OpenAI ${activeMeta.shortLabel} director model · ${activeMeta.enLabel}`}</span>
+          <button onClick={onClose} className="px-4 py-1.5 rounded-lg bg-[#1a1a1a] text-[#cccccc] hover:bg-[#282828] font-medium transition-colors border border-[#333333]">{zh ? '关闭工作台' : 'Close studio'}</button>
         </div>
       </div>
     </div>

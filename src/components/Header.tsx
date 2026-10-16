@@ -1,7 +1,8 @@
 import React from 'react';
-import { Sparkles, Sliders, Download, BookOpen, Search, Eye, Filter, Flame } from 'lucide-react';
+import { Sparkles, Sliders, Download, BookOpen, Search, Globe } from 'lucide-react';
 import { FilterState, StyleId } from '../types';
 import { STYLE_META, STYLE_IDS } from '../data/styleConfig';
+import { Lang, t, themeName } from '../i18n';
 
 interface HeaderProps {
   filters: FilterState;
@@ -13,6 +14,8 @@ interface HeaderProps {
   totalCount: number;
   filteredCount: number;
   favoritesCount: number;
+  lang: Lang;
+  onLangChange: (lang: Lang) => void;
 }
 
 const THEMES = [
@@ -40,20 +43,29 @@ export const Header: React.FC<HeaderProps> = ({
   totalCount,
   filteredCount,
   favoritesCount,
+  lang,
+  onLangChange,
 }) => {
   const activeMeta = filters.style ? STYLE_META[filters.style as StyleId] : null;
+  const zh = lang === 'zh';
   return (
     <header id="vogue-hk-header" className="w-full bg-[#0a0a0a] border-b border-[#222222] sticky top-0 z-30 shadow-xl backdrop-blur-md">
       {/* Top Banner Notice */}
       <div className="bg-[#050505] text-[#888888] text-xs px-4 py-1.5 flex items-center justify-between tracking-widest uppercase border-b border-[#1c1c1c]">
         <div className="flex items-center gap-2 mx-auto sm:mx-0">
           <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: activeMeta?.accent || '#d4af37' }}></span>
-          <span className="text-[#cccccc]">{activeMeta ? `${activeMeta.enLabel} · ${activeMeta.label}夏季特辑` : 'GLOBAL STUDIO SUMMER SPECIAL 2025 · 六风格写真矩阵'}</span>
+          <span className="text-[#cccccc]">
+            {activeMeta
+              ? `${activeMeta.enLabel} · ${zh ? activeMeta.label : activeMeta.descriptionEn}`
+              : 'GLOBAL STUDIO SUMMER SPECIAL 2025 · 6-Style Photobook Matrix'}
+          </span>
         </div>
         <div className="hidden sm:flex items-center gap-4 text-[#888888]">
-          <span className="text-[#aaaaaa]">摄影总监策划版</span>
+          <span className="text-[#aaaaaa]">{zh ? '摄影总监策划版' : 'Photography Director Edition'}</span>
           <span className="text-[#333333]">|</span>
-          <span className="font-medium tracking-normal" style={{ color: activeMeta?.accent || '#d4af37' }}>严禁机械摆拍 · 严禁低幼剧情 · 纯粹自然氧气感</span>
+          <span className="font-medium tracking-normal" style={{ color: activeMeta?.accent || '#d4af37' }}>
+            {zh ? '严禁机械摆拍 · 严禁低幼剧情 · 纯粹自然氧气感' : 'No posed stock shots · no gimmick plots · pure natural airiness'}
+          </span>
         </div>
       </div>
 
@@ -64,14 +76,18 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="text-center md:text-left">
             <div className="flex items-center justify-center md:justify-start gap-3">
               <h1 className="font-cinzel text-3xl sm:text-4xl tracking-widest font-bold uppercase drop-shadow-sm" style={{ color: activeMeta?.accent || '#d4af37' }}>
-                VOGUE <span className="text-[#e5e5e5] font-serif-hk text-2xl sm:text-3xl tracking-normal font-normal">{activeMeta ? activeMeta.label : '全球'}</span>
+                VOGUE <span className="text-[#e5e5e5] font-serif-hk text-2xl sm:text-3xl tracking-normal font-normal">{activeMeta ? (zh ? activeMeta.label : activeMeta.shortLabel) : zh ? '全球' : 'Global'}</span>
               </h1>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase border" style={{ background: `${activeMeta?.accent || '#d4af37'}15`, color: activeMeta?.accent || '#d4af37', borderColor: `${activeMeta?.accent || '#d4af37'}40` }}>
                 Summer Issue · 6 Styles
               </span>
             </div>
             <p className="text-xs sm:text-sm text-[#888888] font-serif-hk mt-1 tracking-wide">
-              {activeMeta ? `${activeMeta.description} · ${activeMeta.tagline}` : '六风格矩阵「港系·日系·韩系·纽约·加州·比基尼」· 92组高定电影感 AI 提示词 · 400+ 独家元素库'}
+              {activeMeta
+                ? `${zh ? activeMeta.description : activeMeta.descriptionEn} · ${zh ? activeMeta.tagline : activeMeta.taglineEn}`
+                : zh
+                  ? '六风格矩阵「港系·日系·韩系·纽约·加州·比基尼」· 92组高定电影感 AI 提示词 · 400+ 独家元素库'
+                  : 'Six-style matrix "HK · JP · KR · NY · CA · Bikini" · 92 couture-grade cinematic AI prompts · 400+ exclusive element library'}
             </p>
           </div>
 
@@ -83,7 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#d4af37] text-black hover:bg-[#c4a030] text-xs sm:text-sm font-bold tracking-wider transition-all shadow-md active:scale-98"
             >
               <Sparkles className="w-4 h-4 text-black" />
-              <span>AI灵感工作台</span>
+              <span>{zh ? 'AI灵感工作台' : 'AI Studio'}</span>
             </button>
 
             <button
@@ -92,7 +108,7 @@ export const Header: React.FC<HeaderProps> = ({
               className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#141414] hover:bg-[#1f1f1f] text-[#dcdcdc] hover:text-[#d4af37] text-xs sm:text-sm font-medium border border-[#2a2a2a] hover:border-[#d4af37]/50 transition-all"
             >
               <Sliders className="w-4 h-4 text-[#888888]" />
-              <span>400+ 预设库</span>
+              <span>{zh ? '400+ 预设库' : '400+ Presets'}</span>
             </button>
 
             <button
@@ -101,18 +117,39 @@ export const Header: React.FC<HeaderProps> = ({
               className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#141414] hover:bg-[#1f1f1f] text-[#dcdcdc] hover:text-[#d4af37] text-xs sm:text-sm font-medium border border-[#2a2a2a] hover:border-[#d4af37]/50 transition-all"
             >
               <Download className="w-4 h-4 text-[#888888]" />
-              <span>批量导出 ({filteredCount}组)</span>
+              <span>{zh ? `批量导出 (${filteredCount}组)` : `Export (${filteredCount})`}</span>
             </button>
 
             <button
               id="btn-open-guidelines"
               onClick={onOpenGuidelines}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-[#aaaaaa] hover:text-[#d4af37] hover:bg-[#141414] text-xs sm:text-sm border border-transparent hover:border-[#2a2a2a] transition-all"
-              title="查看视觉总监策划红线与美学规范"
+              title={zh ? '查看视觉总监策划红线与美学规范' : 'View the visual director red lines and aesthetic rules'}
             >
               <BookOpen className="w-4 h-4 text-[#d4af37]" />
-              <span className="hidden lg:inline">总监策划红线</span>
+              <span className="hidden lg:inline">{zh ? '总监策划红线' : 'Director Rules'}</span>
             </button>
+
+            {/* Language toggle */}
+            <div
+              id="lang-toggle"
+              className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg bg-[#141414] border border-[#2a2a2a]"
+              title={t(lang, 'langSwitch')}
+            >
+              <Globe className="w-4 h-4 text-[#888888]" />
+              <button
+                onClick={() => onLangChange('zh')}
+                className={`px-2 py-0.5 rounded-md text-xs font-medium transition-all ${zh ? 'bg-[#d4af37] text-black' : 'text-[#888888] hover:text-white'}`}
+              >
+                中文
+              </button>
+              <button
+                onClick={() => onLangChange('en')}
+                className={`px-2 py-0.5 rounded-md text-xs font-medium transition-all ${!zh ? 'bg-[#d4af37] text-black' : 'text-[#888888] hover:text-white'}`}
+              >
+                EN
+              </button>
+            </div>
           </div>
         </div>
 
@@ -123,7 +160,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => onFilterChange({ style: '' })}
               className={`px-3 py-1.5 rounded-full whitespace-nowrap font-bold border transition-all ${!filters.style ? 'bg-[#d4af37] text-black border-[#d4af37]' : 'bg-[#141414] text-[#888888] border-[#2a2a2a] hover:text-white'}`}
             >
-              全部风格 {totalCount}
+              {zh ? '全部风格' : 'All Styles'} {totalCount}
             </button>
             {STYLE_IDS.map((sid) => {
               const meta = STYLE_META[sid];
@@ -136,7 +173,7 @@ export const Header: React.FC<HeaderProps> = ({
                   style={isActive ? { background: meta.accent, borderColor: meta.accent } : {}}
                 >
                   <span>{meta.icon}</span>
-                  <span>{meta.label}</span>
+                  <span>{zh ? meta.label : meta.shortLabel}</span>
                 </button>
               );
             })}
@@ -158,50 +195,50 @@ export const Header: React.FC<HeaderProps> = ({
                     }`}
                     style={isActive ? { color: activeMeta?.accent || '#d4af37', borderColor: `${activeMeta?.accent || '#d4af37'}60` } as any : {}}
                   >
-                    {theme}
+                    {themeName(lang, theme)}
                   </button>
                 );
               })}
             </div>
 
-          {/* Search Input & Favorite Filter */}
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="w-4 h-4 text-[#666666] absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                id="search-prompts-input"
-                type="text"
-                placeholder="搜索场景、穿搭面料、光影..."
-                value={filters.search}
-                onChange={(e) => onFilterChange({ search: e.target.value })}
-                className="w-full pl-9 pr-3 py-1.5 bg-[#141414] border border-[#2a2a2a] rounded-lg text-xs sm:text-sm text-[#e5e5e5] placeholder:text-[#666666] focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]"
-              />
-              {filters.search && (
-                <button
-                  onClick={() => onFilterChange({ search: '' })}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#888888] hover:text-[#ffffff] text-xs"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+            {/* Search Input & Favorite Filter */}
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <div className="relative flex-1 sm:w-64">
+                <Search className="w-4 h-4 text-[#666666] absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  id="search-prompts-input"
+                  type="text"
+                  placeholder={zh ? '搜索场景、穿搭面料、光影...' : 'Search locations, outfits, lighting...'}
+                  value={filters.search}
+                  onChange={(e) => onFilterChange({ search: e.target.value })}
+                  className="w-full pl-9 pr-3 py-1.5 bg-[#141414] border border-[#2a2a2a] rounded-lg text-xs sm:text-sm text-[#e5e5e5] placeholder:text-[#666666] focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37]"
+                />
+                {filters.search && (
+                  <button
+                    onClick={() => onFilterChange({ search: '' })}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#888888] hover:text-[#ffffff] text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
 
-            <button
-              id="toggle-favorites-filter"
-              onClick={() => onFilterChange({ favoritesOnly: !filters.favoritesOnly })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all flex items-center gap-1.5 ${
-                filters.favoritesOnly
-                  ? 'bg-[#d4af37]/15 text-[#d4af37] border-[#d4af37]'
-                  : 'bg-[#141414] text-[#888888] border-[#2a2a2a] hover:text-[#e5e5e5] hover:border-[#3a3a3a]'
-              }`}
-            >
-              <span>★ 收藏</span>
-              <span className="text-[10px] px-1.5 py-0.2 bg-[#222222] text-[#d4af37] rounded-full font-bold">
-                {favoritesCount}
-              </span>
-            </button>
+              <button
+                id="toggle-favorites-filter"
+                onClick={() => onFilterChange({ favoritesOnly: !filters.favoritesOnly })}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all flex items-center gap-1.5 ${
+                  filters.favoritesOnly
+                    ? 'bg-[#d4af37]/15 text-[#d4af37] border-[#d4af37]'
+                    : 'bg-[#141414] text-[#888888] border-[#2a2a2a] hover:text-[#e5e5e5] hover:border-[#3a3a3a]'
+                }`}
+              >
+                <span>{zh ? '★ 收藏' : '★ Favorites'}</span>
+                <span className="text-[10px] px-1.5 py-0.2 bg-[#222222] text-[#d4af37] rounded-full font-bold">
+                  {favoritesCount}
+                </span>
+              </button>
+            </div>
           </div>
-        </div>
         </div>
       </div>
     </header>

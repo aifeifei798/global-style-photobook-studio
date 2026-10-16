@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X, Download, Copy, Check, FileText, Code, Table } from 'lucide-react';
 import { PhotobookPrompt } from '../types';
+import { Lang, themeName } from '../i18n';
+import { promptTitle } from '../data/localized';
 
 interface BatchExportModalProps {
   isOpen: boolean;
@@ -8,6 +10,7 @@ interface BatchExportModalProps {
   prompts: PhotobookPrompt[];
   favorites: string[];
   onShowToast: (msg: string) => void;
+  lang: Lang;
 }
 
 type ExportScope = 'ALL' | 'FAVORITES' | 'CURRENT';
@@ -19,10 +22,12 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
   prompts,
   favorites,
   onShowToast,
+  lang,
 }) => {
   const [scope, setScope] = useState<ExportScope>('ALL');
-  const [format, setFormat] = useState<ExportFormat>('TXT_ZH');
+  const [format, setFormat] = useState<ExportFormat>(lang === 'en' ? 'TXT_EN' : 'TXT_ZH');
   const [copied, setCopied] = useState(false);
+  const zh = lang === 'zh';
 
   if (!isOpen) return null;
 
@@ -46,24 +51,38 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
 
     if (format === 'TXT_EN') {
       return targetPrompts
-        .map((p) => `// ${p.title}\n${p.promptEn}\n`)
+        .map((p) => `// ${promptTitle(p, lang)}\n${p.promptEn}\n`)
         .join('\n\n');
     }
 
     if (format === 'MARKDOWN') {
-      let md = `# 全球风格写真矩阵 AI 生图提示词全集 (${targetPrompts.length}组)\n\n`;
-      md += `> 风格矩阵：港系 / 日系 / 韩系 / 纽约 / 加州 / 比基尼特辑 · 纯净无违禁词与加号。\n\n`;
+      let md = zh
+        ? `# 全球风格写真矩阵 AI 生图提示词全集 (${targetPrompts.length}组)\n\n`
+        : `# Global Style Photobook AI Prompt Collection (${targetPrompts.length} prompts)\n\n`;
+      md += zh
+        ? `> 风格矩阵：港系 / 日系 / 韩系 / 纽约 / 加州 / 比基尼特辑 · 纯净无违禁词与加号。\n\n`
+        : `> Styles: HK / JP / KR / NY / CA / Bikini · clean prompts, no banned words or plus signs.\n\n`;
 
       targetPrompts.forEach((p, idx) => {
-        md += `## ${p.title} [${p.styleLabel || p.style}]\n`;
-        md += `- **风格**：${p.styleLabel || p.style}\n`;
-        md += `- **主题系列**：${p.theme}\n`;
-        md += `- **容颜神态**：${p.beautyType}\n`;
-        md += `- **高定穿搭**：${p.outfit}\n`;
-        md += `- **拍摄取景**：${p.location}\n`;
-        md += `- **构图光影**：${p.composition} | ${p.lighting}\n`;
-        md += `- **镜头画幅**：${p.focalLength} | ${p.aspectRatio} | ${p.filmTone}\n`;
-        md += `\n### 中文提示词 (直接复制生图)\n\`\`\`text\n${p.promptZh}\n\`\`\`\n`;
+        md += `## ${promptTitle(p, lang)} [${zh ? (p.styleLabel || p.style) : p.style}]\n`;
+        if (zh) {
+          md += `- **风格**：${p.styleLabel || p.style}\n`;
+          md += `- **主题系列**：${p.theme}\n`;
+          md += `- **容颜神态**：${p.beautyType}\n`;
+          md += `- **高定穿搭**：${p.outfit}\n`;
+          md += `- **拍摄取景**：${p.location}\n`;
+          md += `- **构图光影**：${p.composition} | ${p.lighting}\n`;
+          md += `- **镜头画幅**：${p.focalLength} | ${p.aspectRatio} | ${p.filmTone}\n`;
+        } else {
+          md += `- **Style**: ${p.style}\n`;
+          md += `- **Theme**: ${themeName(lang, p.theme)}\n`;
+          md += `- **Expression**: ${p.beautyType}\n`;
+          md += `- **Outfit**: ${p.outfit}\n`;
+          md += `- **Location**: ${p.location}\n`;
+          md += `- **Composition & lighting**: ${p.composition} | ${p.lighting}\n`;
+          md += `- **Lens & frame**: ${p.focalLength} | ${p.aspectRatio} | ${p.filmTone}\n`;
+        }
+        md += `\n### ${zh ? '中文提示词 (直接复制生图)' : 'Chinese prompt (paste directly)'}\n\`\`\`text\n${p.promptZh}\n\`\`\`\n`;
         md += `\n### English Prompt (Midjourney / FLUX)\n\`\`\`text\n${p.promptEn}\n\`\`\`\n\n---\n\n`;
       });
       return md;
@@ -74,15 +93,17 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
     }
 
     if (format === 'CSV') {
-      const header = '序号,标题,风格,主题,容颜,穿搭,地点,构图,光影,中文生图提示词,英文生图提示词\n';
+      const header = zh
+        ? '序号,标题,风格,主题,容颜,穿搭,地点,构图,光影,中文生图提示词,英文生图提示词\n'
+        : 'No.,Title,Style,Theme,Expression,Outfit,Location,Composition,Lighting,Chinese prompt,English prompt\n';
       const rows = targetPrompts
         .map((p) => {
           const escape = (str: string) => `"${(str || '').replace(/"/g, '""')}"`;
           return [
             p.index,
-            escape(p.title),
-            escape(p.styleLabel || p.style),
-            escape(p.theme),
+            escape(promptTitle(p, lang)),
+            escape(zh ? (p.styleLabel || p.style) : p.style),
+            escape(themeName(lang, p.theme)),
             escape(p.beautyType),
             escape(p.outfit),
             escape(p.location),
@@ -107,7 +128,7 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    onShowToast(`已复制 ${targetPrompts.length} 组写真提示词到剪贴板！`);
+    onShowToast(zh ? `已复制 ${targetPrompts.length} 组写真提示词到剪贴板！` : `Copied ${targetPrompts.length} prompts to the clipboard!`);
   };
 
   const handleDownloadFile = () => {
@@ -136,7 +157,7 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    onShowToast(`已下载 ${filename}.${ext}`);
+    onShowToast(zh ? `已下载 ${filename}.${ext}` : `Downloaded ${filename}.${ext}`);
   };
 
   return (
@@ -150,11 +171,11 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
                 BATCH EXPORT
               </span>
               <h2 className="text-xl font-bold font-serif-hk text-white">
-                批量导出写真集生图提示词
+                {zh ? '批量导出写真集生图提示词' : 'Batch export the photobook prompts'}
               </h2>
             </div>
             <p className="text-xs text-[#888888] font-serif-hk mt-1">
-              一键打包 {targetPrompts.length} 组纯净连贯中文自然语言生图词，适配 Midjourney, Stable Diffusion, FLUX, 剪映等
+              {zh ? `一键打包 ${targetPrompts.length} 组纯净连贯中文自然语言生图词，适配 Midjourney, Stable Diffusion, FLUX, 剪映等` : `One-click bundle of ${targetPrompts.length} clean natural-language prompts for Midjourney, Stable Diffusion, FLUX, CapCut and more`}
             </p>
           </div>
 
@@ -171,7 +192,7 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
           {/* Scope selection */}
           <div>
             <label className="block text-xs font-semibold text-[#cccccc] mb-2 font-serif-hk">
-              导出范围
+              {zh ? '导出范围' : 'Export scope'}
             </label>
             <div className="flex flex-wrap gap-2">
               <button
@@ -182,7 +203,7 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
                     : 'bg-[#141414] text-[#888888] border-[#262626] hover:text-white'
                 }`}
               >
-                全部 {prompts.length} 组全库
+                {zh ? `全部 ${prompts.length} 组全库` : `All ${prompts.length} prompts`}
               </button>
               <button
                 onClick={() => setScope('FAVORITES')}
@@ -192,17 +213,17 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
                     : 'bg-[#141414] text-[#888888] border-[#262626] hover:text-white'
                 }`}
               >
-                仅已收藏写真 ({favorites.length})
+                {zh ? `仅已收藏写真 (${favorites.length})` : `Favorites only (${favorites.length})`}
               </button>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#cccccc] mb-2 font-serif-hk">风格筛选</label>
+            <label className="block text-xs font-semibold text-[#cccccc] mb-2 font-serif-hk">{zh ? '风格筛选' : 'Style filter'}</label>
             <div className="flex flex-wrap gap-2">
               {['ALL','hk','jp','kr','ny','ca','bikini'].map((sid) => (
                 <button key={sid} onClick={() => setStyleFilter(sid)} className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${styleFilter===sid ? 'bg-[#d4af37] text-black border-[#d4af37]' : 'bg-[#141414] text-[#888888] border-[#262626] hover:text-white'}`}>
-                  {sid==='ALL' ? '全部风格' : sid==='hk'?'🇭🇰 港系' : sid==='jp'?'🇯🇵 日系' : sid==='kr'?'🇰🇷 韩系' : sid==='ny'?'🇺🇸 纽约' : sid==='ca'?'🌴 加州' : '👙 比基尼'}
+                  {sid==='ALL' ? (zh ? '全部风格' : 'All styles') : sid==='hk'?(zh?'🇭🇰 港系':'🇭🇰 HK') : sid==='jp'?(zh?'🇯🇵 日系':'🇯🇵 JP') : sid==='kr'?(zh?'🇰🇷 韩系':'🇰🇷 KR') : sid==='ny'?(zh?'🇺🇸 纽约':'🇺🇸 NY') : sid==='ca'?(zh?'🌴 加州':'🌴 CA') : (zh?'👙 比基尼':'👙 Bikini')}
                 </button>
               ))}
             </div>
@@ -211,7 +232,7 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
           {/* Format selection */}
           <div>
             <label className="block text-xs font-semibold text-[#cccccc] mb-2 font-serif-hk">
-              导出格式
+              {zh ? '导出格式' : 'Export format'}
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
@@ -223,10 +244,10 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold">纯中文文本 (.txt)</span>
+                  <span className="text-xs font-bold">{zh ? '纯中文文本 (.txt)' : 'Chinese text (.txt)'}</span>
                   <FileText className="w-3.5 h-3.5 text-[#d4af37]" />
                 </div>
-                <span className="text-[10px] text-[#666666]">无符号直接贴入生图</span>
+                <span className="text-[10px] text-[#666666]">{zh ? '无符号直接贴入生图' : 'Paste directly into image generators'}</span>
               </button>
 
               <button
@@ -238,10 +259,10 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold">排版文档 (.md)</span>
+                  <span className="text-xs font-bold">{zh ? '排版文档 (.md)' : 'Formatted document (.md)'}</span>
                   <FileText className="w-3.5 h-3.5 text-[#d4af37]" />
                 </div>
-                <span className="text-[10px] text-[#666666]">含中英双语与维度</span>
+                <span className="text-[10px] text-[#666666]">{zh ? '含中英双语与维度' : 'Bilingual zh/en with dimension breakdown'}</span>
               </button>
 
               <button
@@ -253,10 +274,10 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold">结构化数据 (.json)</span>
+                  <span className="text-xs font-bold">{zh ? '结构化数据 (.json)' : 'Structured data (.json)'}</span>
                   <Code className="w-3.5 h-3.5 text-[#d4af37]" />
                 </div>
-                <span className="text-[10px] text-[#666666]">程序与接口导入</span>
+                <span className="text-[10px] text-[#666666]">{zh ? '程序与接口导入' : 'For programs and API import'}</span>
               </button>
 
               <button
@@ -268,10 +289,10 @@ export const BatchExportModal: React.FC<BatchExportModalProps> = ({
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold">表格数据 (.csv)</span>
+                  <span className="text-xs font-bold">{zh ? '表格数据 (.csv)' : 'Spreadsheet (.csv)'}</span>
                   <Table className="w-3.5 h-3.5 text-[#d4af37]" />
                 </div>
-                <span className="text-[10px] text-[#666666]">Excel / 飞书表格</span>
+                <span className="text-[10px] text-[#666666]">{zh ? 'Excel / 飞书表格' : 'Excel / Feishu sheets'}</span>
               </button>
             </div>
           </div>

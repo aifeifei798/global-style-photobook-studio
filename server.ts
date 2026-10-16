@@ -6,6 +6,42 @@ import { createServer as createViteServer } from 'vite';
 import OpenAI from 'openai';
 import { getStylePrompt, isValidStyle, STYLE_LABELS, STYLE_SKILL_VERSION } from './server/stylePrompts';
 import { validateAndClean, cleanSkillViolations, BIKINI_COLORS, BIKINI_CUTS, BIKINI_FABRICS, BIKINI_LOCATIONS } from './server/skillGuard';
+import { themeName } from './src/i18n';
+import { STYLE_META } from './src/data/styleConfig';
+import { ALL_PRESETS } from './src/data/presetsData';
+import { PRESET_EN_BASE } from './src/data/translations_base';
+import { PRESET_EN_JP } from './src/data/translations_jp';
+import { PRESET_EN_KRNYCA } from './src/data/translations_krnyca';
+import { PRESET_EN_BK } from './src/data/translations_bk';
+
+// 预设中文名 → 英文名映射，用于 lang=en 时离线 fallback 提示词的元素翻译
+const PRESET_EN_MAP: Record<string, [string, string, string]> = {
+  ...PRESET_EN_BASE,
+  ...PRESET_EN_JP,
+  ...PRESET_EN_KRNYCA,
+  ...PRESET_EN_BK,
+};
+const PRESET_NAME_EN: Record<string, string> = {};
+for (const p of ALL_PRESETS) {
+  const en = PRESET_EN_MAP[p.id];
+  if (en) PRESET_NAME_EN[p.name] = en[0];
+}
+const BIKINI_DEFAULT_EN: Record<string, string> = {
+  '奶油白系带三角比基尼，面料细罗纹弹力针织配蕾丝滚边': 'cream-white tie-side triangle bikini in fine ribbed stretch knit with lace trim',
+  '冲绳青之洞窟浅滩礁石': 'Okinawa Blue Cave shallow reef shallows',
+};
+// 服务端默认值（非预设名）的英文对应
+const SERVER_DEFAULT_EN: Record<string, string> = {
+  '经典港风明艳大美人': 'classic HK-glamour beauty',
+  '珍珠白19姆米桑蚕丝细吊带大露背长裙': 'pearl-white 19-momme mulberry silk spaghetti-strap open-back maxi dress',
+  '浅水湾落日金辉细软退潮沙滩': 'Repulse Bay sunset-gilded soft ebb-tide beach',
+  '85mm f/1.4大光圈清透人像特写': '85mm f/1.4 wide-aperture clear portrait close-up',
+  '傍晚落日熔金温润逆光': 'molten-gold sunset backlight at dusk',
+  '柯达Portra 400暖调微颗粒胶片': 'Kodak Portra 400 warm fine-grain film',
+};
+function enPresetValue(value: string): string {
+  return PRESET_NAME_EN[value] || BIKINI_DEFAULT_EN[value] || SERVER_DEFAULT_EN[value] || value;
+}
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -122,10 +158,13 @@ app.post('/api/generate-prompt', async (req, res) => {
       filmTone = '柯达Portra 400暖调微颗粒胶片',
       aspectRatio = '3:4',
       customKeywords = '',
+      lang = 'zh',
     } = req.body;
 
     const styleId = isValidStyle(style) ? style : 'hk';
+    const isEn = lang === 'en';
     const styleLabel = STYLE_LABELS[styleId] || '港系';
+    const styleLabelOut = isEn ? (STYLE_META[styleId as keyof typeof STYLE_META]?.enLabel || styleLabel) : styleLabel;
 
     const openai = getOpenAIClient();
 
@@ -159,7 +198,8 @@ app.post('/api/generate-prompt', async (req, res) => {
         effectiveLocation = defaults.location;
       }
       const rawZh = `${prefixZh} ${composition}，${effectiveLocation}，${beautyType}身姿自然舒展，神态清透从容，微风吹拂着乌黑长发。她身穿${effectiveOutfit}，面料随海风自然垂坠，细节考究。${lighting}，微光在锁骨与发丝边缘形成温润高光。呈现${filmTone}的纯净氧气感与电影呼吸感。`;
-      const rawEn = `${prefixEn} editorial photobook, ${composition}, ${beautyType} at ${effectiveLocation}, relaxed and effortless graceful posture. Wearing ${effectiveOutfit}. ${lighting}, ${filmTone}, high-fashion cinematography, no artificial posing, pure summer vitality.`;
+      const en = (v: string) => (isEn ? enPresetValue(v) : v);
+      const rawEn = `${prefixEn} editorial photobook, ${en(composition)}, ${en(beautyType)} at ${en(effectiveLocation)}, relaxed and effortless graceful posture. Wearing ${en(effectiveOutfit)}. ${en(lighting)}, ${en(filmTone)}, high-fashion cinematography, no artificial posing, pure summer vitality.`;
       const cleanedZh = cleanSkillViolations(rawZh);
       const cleanedEn = cleanSkillViolations(rawEn);
       const validation = validateAndClean({ promptZh: cleanedZh, promptEn: cleanedEn }, styleId as any);
@@ -168,9 +208,9 @@ app.post('/api/generate-prompt', async (req, res) => {
         success: true,
         data: {
           id: `custom-${Date.now()}`,
-          title: `定制·${theme}夏日写真`,
+          title: isEn ? `Custom · ${themeName('en', theme)} Summer Photobook` : `定制·${theme}夏日写真`,
           style: styleId,
-          styleLabel,
+          styleLabel: styleLabelOut,
           theme,
           beautyType,
           outfit,
@@ -180,7 +220,7 @@ app.post('/api/generate-prompt', async (req, res) => {
           focalLength,
           filmTone,
           aspectRatio,
-          tags: [theme, styleLabel, beautyType.slice(0, 4), '夏日写真'],
+          tags: isEn ? [themeName('en', theme), styleLabelOut, 'Summer Photobook'] : [theme, styleLabel, beautyType.slice(0, 4), '夏日写真'],
           promptZh: validation.cleanedZh,
           promptEn: validation.cleanedEn,
           isAiGenerated: false,
@@ -247,11 +287,11 @@ ${styleId === 'bikini' ? '- 比基尼特辑要求：必须明确比基尼颜色/
         fbLocation = defaults.location;
       }
       const fallbackZh = `${composition}，${fbLocation}，${beautyType}身姿自然舒展，神态清透从容，微风轻拂黑发。她身穿${fbOutfit}，面料随风飘拂。${lighting}，锁骨与发丝被镀上温润微光，呈现${filmTone}的纯净氧气感与${styleLabel}氛围。`;
-      const fallbackEn = `Cinematic ${styleLabel} summer photography, ${composition}, ${beautyType} at ${fbLocation}, effortless natural posture. Wearing ${fbOutfit}. ${lighting}, high-fashion film grain, pure oxygen mood.`;
+      const fallbackEn = `Cinematic ${styleLabel} summer photography, ${isEn ? enPresetValue(composition) : composition}, ${isEn ? enPresetValue(beautyType) : beautyType} at ${isEn ? enPresetValue(fbLocation) : fbLocation}, effortless natural posture. Wearing ${isEn ? enPresetValue(fbOutfit) : fbOutfit}. ${isEn ? enPresetValue(lighting) : lighting}, high-fashion film grain, pure oxygen mood.`;
       parsed.promptZh = parsed.promptZh || fallbackZh;
       parsed.promptEn = parsed.promptEn || fallbackEn;
-      parsed.title = parsed.title || `定制·${theme}夏日写真`;
-      parsed.tags = parsed.tags || [theme, styleLabel, '电影感'];
+      parsed.title = parsed.title || (isEn ? `Custom · ${themeName('en', theme)} Summer Photobook` : `定制·${theme}夏日写真`);
+      parsed.tags = parsed.tags || (isEn ? [themeName('en', theme), styleLabelOut, 'cinematic'] : [theme, styleLabel, '电影感']);
     }
 
     // Skill 自检与清洗（红线/括号/四要素/5要素）
@@ -298,9 +338,9 @@ ${styleId === 'bikini' ? '- 比基尼特辑要求：必须明确比基尼颜色/
       success: true,
       data: {
         id: `custom-${Date.now()}`,
-        title: parsed.title || `定制·${theme}夏日特辑`,
+        title: parsed.title || (isEn ? `Custom · ${themeName('en', theme)} Summer Photobook` : `定制·${theme}夏日特辑`),
         style: styleId,
-        styleLabel,
+        styleLabel: styleLabelOut,
         theme,
         beautyType,
         outfit,
@@ -310,7 +350,7 @@ ${styleId === 'bikini' ? '- 比基尼特辑要求：必须明确比基尼颜色/
         focalLength,
         filmTone,
         aspectRatio,
-        tags: parsed.tags || [theme, styleLabel, '电影感'],
+        tags: parsed.tags || (isEn ? [themeName('en', theme), styleLabelOut, 'cinematic'] : [theme, styleLabel, '电影感']),
         promptZh: parsed.promptZh,
         promptEn: parsed.promptEn,
         isAiGenerated: true,

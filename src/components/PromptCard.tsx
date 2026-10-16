@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Copy, Check, Star, Sparkles, ChevronDown, ChevronUp, Share2, Compass, Film, Eye, Sparkle } from 'lucide-react';
+import { Copy, Check, Star, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { PhotobookPrompt, StyleId } from '../types';
 import { STYLE_META } from '../data/styleConfig';
 import { formatPrompt, PromptFormat, FORMAT_META } from '../utils/formatPrompt';
+import { Lang, t, themeName } from '../i18n';
+import { promptTitle, localizeTag } from '../data/localized';
 
 interface PromptCardProps {
   prompt: PhotobookPrompt;
@@ -10,6 +12,7 @@ interface PromptCardProps {
   onToggleFavorite: (id: string) => void;
   onUseInGenerator: (prompt: PhotobookPrompt) => void;
   onShowToast: (msg: string) => void;
+  lang: Lang;
 }
 
 export const PromptCard: React.FC<PromptCardProps> = ({
@@ -18,13 +21,16 @@ export const PromptCard: React.FC<PromptCardProps> = ({
   onToggleFavorite,
   onUseInGenerator,
   onShowToast,
+  lang,
 }) => {
   const [copied, setCopied] = useState<PromptFormat | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [format, setFormat] = useState<PromptFormat>('flux');
+  const [format, setFormat] = useState<PromptFormat>(lang === 'en' ? 'en' : 'flux');
 
   const styleMeta = prompt.style ? STYLE_META[prompt.style as StyleId] : null;
   const accent = styleMeta?.accent || '#d4af37';
+  const zh = lang === 'zh';
+  const title = promptTitle(prompt, lang);
 
   const currentText = formatPrompt(prompt, format);
 
@@ -34,9 +40,9 @@ export const PromptCard: React.FC<PromptCardProps> = ({
       setCopied(format);
       setTimeout(() => setCopied(null), 2000);
       const label = FORMAT_META[format].label;
-      onShowToast(`已复制「${prompt.title}」· ${label}`);
+      onShowToast(zh ? `已复制「${title}」· ${label}` : `Copied "${title}" · ${label}`);
     } catch (e) {
-      onShowToast('复制失败，请手动选择文字');
+      onShowToast(zh ? '复制失败，请手动选择文字' : 'Copy failed, please select the text manually');
     }
   };
 
@@ -57,11 +63,11 @@ export const PromptCard: React.FC<PromptCardProps> = ({
             </span>
             {styleMeta && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-black" style={{ background: accent }}>
-                {styleMeta.icon} {styleMeta.label}
+                {styleMeta.icon} {zh ? styleMeta.label : styleMeta.shortLabel}
               </span>
             )}
             <span className="text-xs font-medium px-2 py-0.5 rounded bg-[#1c1c1c] text-[#cccccc] border border-[#292929]">
-              {prompt.theme}
+              {zh ? prompt.theme : themeName(lang, prompt.theme)}
             </span>
             <span className="text-xs font-serif-hk text-[#777777] hidden sm:inline">
               {prompt.focalLength} · {prompt.aspectRatio}
@@ -76,14 +82,14 @@ export const PromptCard: React.FC<PromptCardProps> = ({
                   isFavorite ? 'hover:opacity-80' : 'text-[#666666] hover:text-[#e5e5e5] hover:bg-[#1c1c1c]'
                 }`}
                 style={isFavorite ? { color: accent, background: `${accent}15` } : {}}
-                title={isFavorite ? '取消收藏' : '加入收藏'}
+                title={isFavorite ? (zh ? '取消收藏' : 'Remove from favorites') : (zh ? '加入收藏' : 'Add to favorites')}
               >
                 <Star className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} style={isFavorite ? { fill: accent, color: accent } : {}} />
               </button>
             <button
               onClick={() => onUseInGenerator(prompt)}
               className="p-1.5 rounded-lg text-[#666666] hover:text-[#d4af37] hover:bg-[#1c1c1c] transition-colors"
-              title="载入AI灵感工作台定制修改"
+              title={zh ? '载入AI灵感工作台定制修改' : 'Load into AI Studio for customization'}
             >
               <Sparkles className="w-4 h-4" />
             </button>
@@ -92,7 +98,7 @@ export const PromptCard: React.FC<PromptCardProps> = ({
 
         {/* Title */}
         <h3 className="font-serif-hk text-lg font-bold text-white mt-2 tracking-wide transition-colors group-hover:opacity-90" style={{ }}>
-          {prompt.title}
+          {title}
         </h3>
 
         {/* Tags */}
@@ -102,7 +108,7 @@ export const PromptCard: React.FC<PromptCardProps> = ({
               key={idx}
               className="text-[11px] px-2 py-0.5 rounded-full bg-[#181818] text-[#888888] border border-[#262626]"
             >
-              #{tag}
+              #{localizeTag(tag, lang)}
             </span>
           ))}
         </div>
@@ -130,9 +136,9 @@ export const PromptCard: React.FC<PromptCardProps> = ({
           </span>
         </div>
         <div className="text-[10px] text-[#666666] mb-1.5 -mt-1 font-serif-hk">
-          {format==='flux' && 'FLUX 纯自然语言 · 无参数直接粘贴'}
-          {format==='mj' && `Midjourney 带参数 · ${prompt.promptEn.slice(0,24)}... --ar ${prompt.aspectRatio} --v 6.1`}
-          {format==='en' && 'English · 一键翻译备用'}
+          {format==='flux' && (zh ? 'FLUX 纯自然语言 · 无参数直接粘贴' : 'FLUX pure natural language · paste directly, no parameters')}
+          {format==='mj' && (zh ? `Midjourney 带参数 · ${prompt.promptEn.slice(0,24)}... --ar ${prompt.aspectRatio} --v 6.1` : `Midjourney with parameters · ${prompt.promptEn.slice(0,24)}... --ar ${prompt.aspectRatio} --v 6.1`)}
+          {format==='en' && (zh ? 'English · 一键翻译备用' : 'English · ready-to-paste translation')}
         </div>
 
         {/* Prompt Content Container */}
@@ -146,23 +152,23 @@ export const PromptCard: React.FC<PromptCardProps> = ({
           <div className="mt-3 pt-3 border-t border-[#222222] text-xs space-y-1.5 bg-[#0d0d0d] p-3 rounded-lg border border-[#1f1f1f] animate-in fade-in duration-200">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[#888888]">
               <div>
-                <span className="text-[#666666] font-medium">容颜神态：</span>
+                <span className="text-[#666666] font-medium">{zh ? '容颜神态：' : 'Expression:'}</span>
                 <span className="text-[#cccccc] font-serif-hk">{prompt.beautyType}</span>
               </div>
               <div>
-                <span className="text-[#666666] font-medium">高定穿搭：</span>
+                <span className="text-[#666666] font-medium">{zh ? '高定穿搭：' : 'Outfit:'}</span>
                 <span className="text-[#cccccc] font-serif-hk">{prompt.outfit}</span>
               </div>
               <div>
-                <span className="text-[#666666] font-medium">拍摄场景：</span>
+                <span className="text-[#666666] font-medium">{zh ? '拍摄场景：' : 'Location:'}</span>
                 <span className="text-[#cccccc] font-serif-hk">{prompt.location}</span>
               </div>
               <div>
-                <span className="text-[#666666] font-medium">构图光影：</span>
+                <span className="text-[#666666] font-medium">{zh ? '构图光影：' : 'Composition:'}</span>
                 <span className="text-[#cccccc] font-serif-hk">{prompt.composition}</span>
               </div>
               <div className="sm:col-span-2">
-                <span className="text-[#666666] font-medium">胶片质感：</span>
+                <span className="text-[#666666] font-medium">{zh ? '胶片质感：' : 'Film tone:'}</span>
                 <span className="text-[#d4af37] font-serif-hk">{prompt.filmTone} ({prompt.focalLength})</span>
               </div>
             </div>
@@ -178,12 +184,12 @@ export const PromptCard: React.FC<PromptCardProps> = ({
         >
           {isExpanded ? (
             <>
-              <span>收起维度</span>
+              <span>{zh ? '收起维度' : 'Collapse breakdown'}</span>
               <ChevronUp className="w-3.5 h-3.5" />
             </>
           ) : (
             <>
-              <span>展开维度分解</span>
+              <span>{zh ? '展开维度分解' : 'Expand breakdown'}</span>
               <ChevronDown className="w-3.5 h-3.5" />
             </>
           )}
@@ -196,7 +202,7 @@ export const PromptCard: React.FC<PromptCardProps> = ({
             style={{ background: accent }}
           >
             {copied ? <Check className="w-3.5 h-3.5 text-black font-bold" /> : <Copy className="w-3.5 h-3.5 text-black" />}
-            <span>{copied ? `已复制 ${FORMAT_META[format].shortLabel}` : `复制 ${FORMAT_META[format].shortLabel}`}</span>
+            <span>{copied ? (zh ? `已复制 ${FORMAT_META[format].shortLabel}` : `Copied ${FORMAT_META[format].shortLabel}`) : (zh ? `复制 ${FORMAT_META[format].shortLabel}` : `Copy ${FORMAT_META[format].shortLabel}`)}</span>
           </button>
         </div>
       </div>

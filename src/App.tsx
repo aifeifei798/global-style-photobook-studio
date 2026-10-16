@@ -9,9 +9,11 @@ import { PromptGeneratorModal } from './components/PromptGeneratorModal';
 import { BatchExportModal } from './components/BatchExportModal';
 import { DirectorGuidelinesModal } from './components/DirectorGuidelinesModal';
 import { Toast } from './components/Toast';
-import { Sparkles, Sliders, Download, BookOpen, Heart, ArrowUp, Camera, Layers, Film, Shuffle, Zap } from 'lucide-react';
+import { ArrowUp, Camera, Shuffle } from 'lucide-react';
 import { STYLE_IDS } from './data/styleConfig';
 import { ALL_PRESETS } from './data/presetsData';
+import { Lang, t, themeName } from './i18n';
+import { promptTitle, localizePreset } from './data/localized';
 
 export default function App() {
   // 自定义/盲盒提示词持久化到 localStorage，刷新页面后不丢失
@@ -39,6 +41,23 @@ export default function App() {
     search: '',
     favoritesOnly: false,
   });
+
+  // UI language (zh default, persisted)
+  const [lang, setLang] = useState<Lang>(() => {
+    try {
+      return localStorage.getItem('studio_lang') === 'en' ? 'en' : 'zh';
+    } catch {
+      return 'zh';
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('studio_lang', lang);
+    } catch {
+      // localStorage unavailable, ignore
+    }
+  }, [lang]);
+  const zh = lang === 'zh';
 
   // Modals state
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
@@ -82,10 +101,10 @@ export default function App() {
     setFavorites((prev) => {
       const exists = prev.includes(id);
       if (exists) {
-        showToast('已从收藏夹移除');
+        showToast(t(lang, 'toastUnfavorited'));
         return prev.filter((item) => item !== id);
       } else {
-        showToast('已加入我的夏日写真收藏夹 ★');
+        showToast(t(lang, 'toastFavorited'));
         return [...prev, id];
       }
     });
@@ -98,19 +117,19 @@ export default function App() {
   // Add custom generated prompt to the collection
   const handleSaveCustomPrompt = (newPrompt: PhotobookPrompt) => {
     setCustomPrompts((prev) => [newPrompt, ...prev]);
-    showToast(`已成功收录「${newPrompt.title}」至写真集`);
+    showToast(t(lang, 'toastSaved', { title: newPrompt.title }));
   };
 
   const handleUseInGenerator = (prompt: PhotobookPrompt) => {
     setGeneratorInitialPrompt(prompt);
     setIsGeneratorOpen(true);
-    showToast(`已载入「${prompt.title}」至工作台`);
+    showToast(t(lang, 'toastLoaded', { title: promptTitle(prompt, lang) }));
   };
 
   const handleSelectPresetForGenerator = (preset: PresetItem) => {
     setSelectedPresetForGenerator(preset);
     setIsGeneratorOpen(true);
-    showToast(`已将预设「${preset.name}」载入工作台`);
+    showToast(t(lang, 'toastPresetLoaded', { name: localizePreset(preset, lang).name }));
   };
 
   // Filtered prompts
@@ -127,7 +146,7 @@ export default function App() {
       }
       if (filters.search) {
         const query = filters.search.toLowerCase();
-        const matchTitle = item.title.toLowerCase().includes(query);
+        const matchTitle = item.title.toLowerCase().includes(query) || promptTitle(item, lang).toLowerCase().includes(query);
         const matchZh = item.promptZh.toLowerCase().includes(query);
         const matchEn = item.promptEn.toLowerCase().includes(query);
         const matchBeauty = item.beautyType.toLowerCase().includes(query);
@@ -164,10 +183,10 @@ export default function App() {
       bikini: ['冲绳海岸', '湘南海岸', '伊豆热海'],
     };
     const tList = themesByStyle[randomStyle] || ['海风漫游'];
-    const t = tList[Math.floor(Math.random() * tList.length)];
+    const theme = tList[Math.floor(Math.random() * tList.length)];
     const payload = {
       style: randomStyle,
-      theme: t,
+      theme,
       beautyType: pick('beauty'),
       outfit: pick('outfit'),
       location: pick('scene'),
@@ -184,17 +203,19 @@ export default function App() {
       if (res.status === 429) throw new Error('rate-limited');
       if (data.success && data.data) {
         setCustomPrompts((prev) => [data.data, ...prev]);
-        showToast(`🎁 盲盒开箱：${STYLE_META[randomStyle].label}·${t} 灵感卡片已加入顶部！`);
+        showToast(t(lang, 'toastBlindBoxOpened', { style: zh ? STYLE_META[randomStyle].label : STYLE_META[randomStyle].shortLabel, theme: themeName(lang, theme) }));
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else throw new Error();
     } catch (error: any) {
       // 离线兜底
       const meta = STYLE_META[randomStyle];
-      const zh = `${payload.composition}，${payload.location}，${payload.beautyType}身姿自然舒展，神态清透从容。她身穿${payload.outfit}，${payload.lighting}，呈现${payload.filmTone}胶片感。`;
+      const zhPrompt = `${payload.composition}，${payload.location}，${payload.beautyType}身姿自然舒展，神态清透从容。她身穿${payload.outfit}，${payload.lighting}，呈现${payload.filmTone}胶片感。`;
       const en = `Cinematic ${meta.enLabel} ${payload.composition}, ${payload.beautyType} at ${payload.location}, ${payload.lighting}`;
-      const fallback: PhotobookPrompt = { id: `blind-${Date.now()}`, index: 99, title: `盲盒·${meta.label}·${t}`, theme: t, style: randomStyle, styleLabel: meta.label, beautyType: payload.beautyType, outfit: payload.outfit, location: payload.location, composition: payload.composition, lighting: payload.lighting, focalLength: payload.focalLength, filmTone: payload.filmTone, aspectRatio: payload.aspectRatio, tags: [meta.label, t, '盲盒'], promptZh: zh, promptEn: en };
+      const fallback: PhotobookPrompt = { id: `blind-${Date.now()}`, index: 99, title: zh ? `盲盒·${meta.label}·${theme}` : `Blind Box · ${meta.shortLabel} · ${themeName(lang, theme)}`, theme, style: randomStyle, styleLabel: meta.label, beautyType: payload.beautyType, outfit: payload.outfit, location: payload.location, composition: payload.composition, lighting: payload.lighting, focalLength: payload.focalLength, filmTone: payload.filmTone, aspectRatio: payload.aspectRatio, tags: [meta.label, theme, '盲盒'], promptZh: zhPrompt, promptEn: en };
       setCustomPrompts((prev) => [fallback, ...prev]);
-      showToast(error?.message === 'rate-limited' ? '⏳ 请求过于频繁，盲盒已离线生成，稍后可重试' : `🎁 盲盒已生成（离线）· ${meta.label}·${t}`);
+      showToast(error?.message === 'rate-limited'
+        ? t(lang, 'toastBlindBoxOfflineRate')
+        : t(lang, 'toastBlindBoxOffline', { style: zh ? meta.label : meta.shortLabel, theme: themeName(lang, theme) }));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsBlindBoxLoading(false);
@@ -222,6 +243,8 @@ export default function App() {
         totalCount={prompts.length}
         filteredCount={filteredPrompts.length}
         favoritesCount={favorites.length}
+        lang={lang}
+        onLangChange={setLang}
       />
 
       {/* Main Showcase Body */}
@@ -242,15 +265,31 @@ export default function App() {
                   Editorial Directive · {activeStyleMeta ? activeStyleMeta.enLabel : 'GLOBAL STUDIO'}
                 </span>
                 <span className="text-[#333333]">|</span>
-                <span className="text-xs text-[#888888] font-serif-hk">{activeStyleMeta ? activeStyleMeta.tagline : '六大风格矩阵 · 港系 / 日系 / 韩系 / 纽约 / 加州 / 比基尼'}</span>
+                <span className="text-xs text-[#888888] font-serif-hk">{activeStyleMeta ? (zh ? activeStyleMeta.tagline : activeStyleMeta.taglineEn) : zh ? '六大风格矩阵 · 港系 / 日系 / 韩系 / 纽约 / 加州 / 比基尼' : 'Six-style matrix · HK / JP / KR / NY / CA / Bikini'}</span>
               </div>
               <h2 className="text-lg sm:text-2xl font-bold font-serif-hk text-white tracking-wide">
-                {activeStyleMeta ? `《${activeStyleMeta.label}》夏季特辑 · ${activeStyleMeta.description}` : '全球风格写真矩阵 · 92组精选生图词库'}
+                {activeStyleMeta
+                  ? zh
+                    ? `《${activeStyleMeta.label}》夏季特辑 · ${activeStyleMeta.description}`
+                    : `"${activeStyleMeta.shortLabel}" Summer Issue · ${activeStyleMeta.descriptionEn}`
+                  : zh
+                    ? '全球风格写真矩阵 · 92组精选生图词库'
+                    : 'Global Style Photobook Matrix · 92 curated prompt collections'}
               </h2>
               <p className="mt-2 text-xs sm:text-sm text-[#aaaaaa] font-serif-hk leading-relaxed">
-                全套提示词严格遵循视觉总监规范：<strong style={{ color: activeStyleMeta?.accent || '#d4af37' }}>彻底严禁男友视角、偷吃恶作剧及机械摆拍</strong>；
-                格式为<strong className="text-[#e5e5e5]">纯净连贯的自然语言长段落（无任何加号与方括号）</strong>，
-                {activeStyleMeta ? `当前风格：${activeStyleMeta.label} · ${activeStyleMeta.tagline}` : '支持六风格一键切换，每种风格独立语汇库与场景库'}。
+                {zh ? (
+                  <>
+                    全套提示词严格遵循视觉总监规范：<strong style={{ color: activeStyleMeta?.accent || '#d4af37' }}>彻底严禁男友视角、偷吃恶作剧及机械摆拍</strong>；
+                    格式为<strong className="text-[#e5e5e5]">纯净连贯的自然语言长段落（无任何加号与方括号）</strong>，
+                    {activeStyleMeta ? `当前风格：${activeStyleMeta.label} · ${activeStyleMeta.tagline}` : '支持六风格一键切换，每种风格独立语汇库与场景库'}。
+                  </>
+                ) : (
+                  <>
+                    Every prompt follows the visual director's rules: <strong style={{ color: activeStyleMeta?.accent || '#d4af37' }}>no boyfriend-POV, no prank gimmicks, no mechanical posing</strong>;
+                    format is a <strong className="text-[#e5e5e5]">pure coherent natural-language paragraph (no plus signs or brackets)</strong>,
+                    {activeStyleMeta ? ` current style: ${activeStyleMeta.shortLabel} · ${activeStyleMeta.taglineEn}` : 'one-click switching across six styles, each with its own vocabulary and location library'}.
+                  </>
+                )}
               </p>
             </div>
 
@@ -258,15 +297,15 @@ export default function App() {
             <div className="grid grid-cols-3 gap-3 sm:gap-4 shrink-0 w-full lg:w-auto">
               <div className="bg-[#141414] p-3 rounded-xl border border-[#242424] text-center hover:border-[#d4af37]/30 transition-colors">
                 <div className="font-cinzel text-xl sm:text-2xl font-bold text-white">{filteredPrompts.length}</div>
-                <div className="text-[11px] text-[#888888] font-serif-hk mt-0.5">当前筛选</div>
+                <div className="text-[11px] text-[#888888] font-serif-hk mt-0.5">{zh ? '当前筛选' : 'Filtered'}</div>
               </div>
               <div className="bg-[#141414] p-3 rounded-xl border border-[#242424] text-center hover:border-[#d4af37]/30 transition-colors">
                 <div className="font-cinzel text-xl sm:text-2xl font-bold text-white">{prompts.length}</div>
-                <div className="text-[11px] text-[#888888] font-serif-hk mt-0.5">全库总数</div>
+                <div className="text-[11px] text-[#888888] font-serif-hk mt-0.5">{zh ? '全库总数' : 'Total library'}</div>
               </div>
               <div className="bg-[#141414] p-3 rounded-xl border border-[#242424] text-center hover:border-[#d4af37]/30 transition-colors">
                 <div className="font-cinzel text-xl sm:text-2xl font-bold" style={{ color: activeStyleMeta?.accent || '#d4af37' }}>6</div>
-                <div className="text-[11px] text-[#888888] font-serif-hk mt-0.5">风格体系</div>
+                <div className="text-[11px] text-[#888888] font-serif-hk mt-0.5">{zh ? '风格体系' : 'Style systems'}</div>
               </div>
             </div>
           </div>
@@ -276,12 +315,12 @@ export default function App() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-2">
             <h3 className="font-serif-hk font-bold text-[#e5e5e5] text-sm sm:text-base tracking-wide">
-              写真集画报一览
+              {zh ? '写真集画报一览' : 'Lookbook overview'}
             </h3>
             <span className="text-xs bg-[#1a1a1a] text-[#d4af37] border border-[#2a2a2a] px-2.5 py-0.5 rounded-full font-mono">
               {filteredPrompts.length} / {prompts.length}
             </span>
-            <span className="hidden sm:inline text-[11px] text-[#666666]">· {prompts.length} 组 · Skill 强控 · 单段无括号</span>
+            <span className="hidden sm:inline text-[11px] text-[#666666]">· {zh ? `${prompts.length} 组 · Skill 强控 · 单段无括号` : `${prompts.length} collections · SkillGuard enforced · single paragraph, no brackets`}</span>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button
@@ -289,11 +328,11 @@ export default function App() {
               disabled={isBlindBoxLoading}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-black text-xs sm:text-sm font-black shadow-lg border transition-all active:scale-95 disabled:opacity-60"
               style={{ background: activeStyleMeta?.accent || '#d4af37', borderColor: activeStyleMeta?.accent || '#d4af37' }}
-              title="随机组合风格、镜头和场景，瞬间生成灵感卡片"
+              title={zh ? '随机组合风格、镜头和场景，瞬间生成灵感卡片' : 'Randomly combine style, lens and location for an instant inspiration card'}
             >
               <Shuffle className={`w-4 h-4 ${isBlindBoxLoading ? 'animate-spin' : ''}`} />
-              <span>{isBlindBoxLoading ? '盲盒开箱中...' : '🎲 随机盲盒'}</span>
-              <span className="hidden sm:inline text-[10px] bg-black/15 px-1.5 py-0.5 rounded-full">一键灵感</span>
+              <span>{isBlindBoxLoading ? (zh ? '盲盒开箱中...' : 'Opening blind box...') : (zh ? '🎲 随机盲盒' : '🎲 Random blind box')}</span>
+              <span className="hidden sm:inline text-[10px] bg-black/15 px-1.5 py-0.5 rounded-full">{zh ? '一键灵感' : 'Instant idea'}</span>
             </button>
 
           {(filters.style || filters.theme || filters.search || filters.favoritesOnly) && (
@@ -302,7 +341,7 @@ export default function App() {
               className="text-xs hover:underline font-serif-hk transition-colors"
               style={{ color: activeStyleMeta?.accent || '#d4af37' }}
             >
-              清空全部筛选条件
+              {zh ? '清空全部筛选条件' : 'Clear all filters'}
             </button>
           )}
           </div>
@@ -319,6 +358,7 @@ export default function App() {
                 onToggleFavorite={handleToggleFavorite}
                 onUseInGenerator={handleUseInGenerator}
                 onShowToast={showToast}
+                lang={lang}
               />
             ))}
           </div>
@@ -326,16 +366,16 @@ export default function App() {
           /* Empty State */
           <div className="bg-[#0f0f0f] rounded-2xl border border-dashed border-[#333333] p-12 text-center my-8">
             <Camera className="w-12 h-12 text-[#555555] mx-auto mb-3" />
-            <h4 className="text-base font-bold text-white font-serif-hk">未找到匹配的写真提示词</h4>
+            <h4 className="text-base font-bold text-white font-serif-hk">{zh ? '未找到匹配的写真提示词' : 'No matching photobook prompts found'}</h4>
             <p className="text-xs text-[#888888] font-serif-hk mt-1 max-w-md mx-auto">
-              尝试更换搜索关键词，或使用 AI 灵感工作台定制专属的夏日写真组合。
+              {zh ? '尝试更换搜索关键词，或使用 AI 灵感工作台定制专属的夏日写真组合。' : 'Try a different search keyword, or customize your own summer shot combination in the AI Studio.'}
             </p>
             <div className="mt-4 flex items-center justify-center gap-3">
               <button
                 onClick={() => setFilters({ style: '', theme: '', search: '', favoritesOnly: false })}
                 className="px-4 py-2 rounded-lg bg-[#1a1a1a] text-[#cccccc] text-xs font-medium border border-[#333333] hover:bg-[#252525] transition-all"
               >
-                重置筛选
+                {zh ? '重置筛选' : 'Reset filters'}
               </button>
               <button
                 onClick={() => {
@@ -344,7 +384,7 @@ export default function App() {
                 }}
                 className="px-4 py-2 rounded-lg bg-[#d4af37] text-black text-xs font-bold hover:bg-[#c4a030] transition-all"
               >
-                前往 AI 工作台定制
+                {zh ? '前往 AI 工作台定制' : 'Open AI Studio to customize'}
               </button>
             </div>
           </div>
@@ -355,7 +395,7 @@ export default function App() {
       <button
         onClick={scrollToTop}
         className="fixed bottom-6 left-6 z-40 p-3 rounded-full bg-[#141414] hover:bg-[#222222] text-[#d4af37] hover:text-white shadow-xl border border-[#2a2a2a] hover:border-[#d4af37] transition-all active:scale-95 backdrop-blur-xs"
-        title="返回顶部"
+        title={zh ? '返回顶部' : 'Back to top'}
       >
         <ArrowUp className="w-4 h-4" />
       </button>
@@ -368,11 +408,13 @@ export default function App() {
               VOGUE HONG KONG
             </span>
             <span className="text-[#333333]">|</span>
-            <span className="font-serif-hk text-[#aaaaaa]">港姐夏日写真集 视觉总监策划专案</span>
+            <span className="font-serif-hk text-[#aaaaaa]">{zh ? '港姐夏日写真集 视觉总监策划专案' : 'Summer Photobook · Visual Director Edition'}</span>
           </div>
 
           <p className="text-[#666666] font-serif-hk text-center md:text-right">
-            {prompts.length} 组纯净中文自然语言 AI 生图词 · 适配 Midjourney v6 / FLUX / SDXL / 剪映
+            {zh
+              ? `${prompts.length} 组纯净中文自然语言 AI 生图词 · 适配 Midjourney v6 / FLUX / SDXL / 剪映`
+              : `${prompts.length} clean natural-language AI prompts · works with Midjourney v6 / FLUX / SDXL / CapCut`}
           </p>
         </div>
       </footer>
@@ -384,6 +426,7 @@ export default function App() {
         onSelectPresetForGenerator={handleSelectPresetForGenerator}
         onShowToast={showToast}
         activeStyle={filters.style || undefined}
+        lang={lang}
       />
 
       <PromptGeneratorModal
@@ -394,6 +437,7 @@ export default function App() {
         onSavePrompt={handleSaveCustomPrompt}
         onShowToast={showToast}
         initialStyle={(filters.style as any) || undefined}
+        lang={lang}
       />
 
       <BatchExportModal
@@ -402,11 +446,13 @@ export default function App() {
         prompts={prompts}
         favorites={favorites}
         onShowToast={showToast}
+        lang={lang}
       />
 
       <DirectorGuidelinesModal
         isOpen={isGuidelinesOpen}
         onClose={() => setIsGuidelinesOpen(false)}
+        lang={lang}
       />
 
       {/* Toast Notification */}

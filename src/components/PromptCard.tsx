@@ -30,7 +30,8 @@ export const PromptCard: React.FC<PromptCardProps> = ({
   const styleMeta = prompt.style ? STYLE_META[prompt.style as StyleId] : null;
   const accent = styleMeta?.accent || '#d4af37';
   const zh = lang === 'zh';
-  const title = promptTitle(prompt, lang);
+  // NO.xx badge already shows the number, so strip the "01 · " prefix from the title
+  const title = promptTitle(prompt, lang).replace(/^\d+\s·\s?/, '');
 
   const currentText = formatPrompt(prompt, format);
 
@@ -49,8 +50,7 @@ export const PromptCard: React.FC<PromptCardProps> = ({
   return (
     <article
       id={`prompt-card-${prompt.id}`}
-      className="bg-[#111111] rounded-xl border border-[#222222] shadow-lg hover:shadow-2xl transition-all duration-300 flex flex-col justify-between overflow-hidden group"
-      style={{ borderColor: undefined }}
+      className="bg-[#111111] rounded-xl border border-[#222222] shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden group"
       onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${accent}60`; }}
       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#222222'; }}
     >
@@ -97,7 +97,7 @@ export const PromptCard: React.FC<PromptCardProps> = ({
         </div>
 
         {/* Title */}
-        <h3 className="font-serif-hk text-lg font-bold text-white mt-2 tracking-wide transition-colors group-hover:opacity-90" style={{ }}>
+        <h3 className="font-serif-hk text-lg font-bold text-white mt-2 tracking-wide transition-colors group-hover:opacity-90">
           {title}
         </h3>
 
@@ -132,19 +132,13 @@ export const PromptCard: React.FC<PromptCardProps> = ({
             ))}
           </div>
           <span className="text-[10px] text-[#666666] tracking-wider font-mono whitespace-nowrap">
-            {format==='flux' ? `${prompt.promptZh.length} 字` : format==='mj' ? `${prompt.aspectRatio} · v6.1` : `${prompt.promptEn.split(' ').length} words`}
+            {format==='flux' ? `${prompt.promptZh.length} chars` : format==='mj' ? `--ar ${prompt.aspectRatio} · v6.1` : `${prompt.promptEn.split(' ').length} words`}
           </span>
-        </div>
-        <div className="text-[10px] text-[#666666] mb-1.5 -mt-1 font-serif-hk">
-          {format==='flux' && (zh ? 'FLUX 纯自然语言 · 无参数直接粘贴' : 'FLUX pure natural language · paste directly, no parameters')}
-          {format==='mj' && (zh ? `Midjourney 带参数 · ${prompt.promptEn.slice(0,24)}... --ar ${prompt.aspectRatio} --v 6.1` : `Midjourney with parameters · ${prompt.promptEn.slice(0,24)}... --ar ${prompt.aspectRatio} --v 6.1`)}
-          {format==='en' && (zh ? 'English · 一键翻译备用' : 'English · ready-to-paste translation')}
         </div>
 
         {/* Prompt Content Container */}
         <div className="relative bg-[#0a0a0a] rounded-lg p-3.5 border border-[#222222] text-[#cccccc] text-xs sm:text-sm leading-relaxed font-serif-hk">
           <p className={`select-text ${format==='en' || format==='mj' ? 'font-sans text-xs text-[#b8b8b8] leading-normal' : 'text-[#d4d4d4]'} line-clamp-6`}>{currentText}</p>
-          {format==='mj' && <span className="absolute bottom-1 right-1 text-[9px] bg-[#1a1a1a] text-[#d4af37] border border-[#333] px-1.5 py-0.5 rounded font-mono">--ar {prompt.aspectRatio} --v 6.1 --style raw</span>}
         </div>
 
         {/* Expanded Metadata Details */}

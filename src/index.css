@@ -32,4 +32,13 @@
   background: #d4af37;
 }
 
+/* Entrance animation used by toasts, modals and the scroll-to-top button */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+  animation: fadeUp 0.25s ease both;
+}
+
 

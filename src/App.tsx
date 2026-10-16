@@ -15,6 +15,21 @@ import { ALL_PRESETS } from './data/presetsData';
 import { Lang, t, themeName } from './i18n';
 import { promptTitle, localizePreset } from './data/localized';
 
+const THEMES = [
+  '全部写真',
+  '海风漫游',
+  '旧港光影',
+  '绿意庭院',
+  '文艺天星',
+  '法式海岛',
+  '池畔日光',
+  '校园初恋',
+  '首尔日常',
+  '街头随性',
+  '阳光海岸',
+  '冲绳海岸',
+];
+
 export default function App() {
   // 自定义/盲盒提示词持久化到 localStorage，刷新页面后不丢失
   const [customPrompts, setCustomPrompts] = useState<PhotobookPrompt[]>(() => {
@@ -112,6 +127,10 @@ export default function App() {
 
   const handleFilterChange = (newFilters: Partial<FilterState>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
+  };
+
+  const onThemeSelect = (theme: string) => {
+    setFilters({ theme: theme === '全部写真' ? '' : theme });
   };
 
   // Add custom generated prompt to the collection
@@ -222,6 +241,13 @@ export default function App() {
     }
   };
 
+  const [showTop, setShowTop] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -250,24 +276,16 @@ export default function App() {
       {/* Main Showcase Body */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* Curatorial Brief Bar with Elegant Dark Gold Accents */}
-        <div className="bg-[#0f0f0f] rounded-2xl border border-[#222222] p-5 sm:p-6 mb-6 sm:mb-8 shadow-2xl relative overflow-hidden">
+        <div className="bg-[#0f0f0f] rounded-2xl border border-[#222222] p-5 sm:p-6 mb-5 shadow-2xl relative overflow-hidden">
           {/* Subtle gold ambient light */}
           <div className="absolute top-0 right-0 w-96 h-96 bg-[#d4af37]/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
 
-          {/* Gold subtle corner accents */}
-          <div className="absolute top-0 left-0 w-8 h-8 border-t border-l border-[#d4af37]/40"></div>
-          <div className="absolute bottom-0 right-0 w-8 h-8 border-b border-r border-[#d4af37]/40"></div>
-
-          <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
             <div className="max-w-3xl">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="font-cinzel text-xs font-bold tracking-[0.2em] uppercase" style={{ color: activeStyleMeta?.accent || '#d4af37' }}>
-                  Editorial Directive · {activeStyleMeta ? activeStyleMeta.enLabel : 'GLOBAL STUDIO'}
-                </span>
-                <span className="text-[#333333]">|</span>
-                <span className="text-xs text-[#888888] font-serif-hk">{activeStyleMeta ? (zh ? activeStyleMeta.tagline : activeStyleMeta.taglineEn) : zh ? '六大风格矩阵 · 港系 / 日系 / 韩系 / 纽约 / 加州 / 比基尼' : 'Six-style matrix · HK / JP / KR / NY / CA / Bikini'}</span>
-              </div>
-              <h2 className="text-lg sm:text-2xl font-bold font-serif-hk text-white tracking-wide">
+              <span className="font-cinzel text-xs font-bold tracking-[0.2em] uppercase" style={{ color: activeStyleMeta?.accent || '#d4af37' }}>
+                Editorial Directive · {activeStyleMeta ? activeStyleMeta.enLabel : 'GLOBAL STUDIO'}
+              </span>
+              <h2 className="text-lg sm:text-2xl font-bold font-serif-hk text-white tracking-wide mt-1.5">
                 {activeStyleMeta
                   ? zh
                     ? `《${activeStyleMeta.label}》夏季特辑 · ${activeStyleMeta.description}`
@@ -311,39 +329,46 @@ export default function App() {
           </div>
         </div>
 
-        {/* Results Header and Active Filter Pill */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-5">
-          <div className="flex items-center gap-2">
-            <h3 className="font-serif-hk font-bold text-[#e5e5e5] text-sm sm:text-base tracking-wide">
-              {zh ? '写真集画报一览' : 'Lookbook overview'}
-            </h3>
-            <span className="text-xs bg-[#1a1a1a] text-[#d4af37] border border-[#2a2a2a] px-2.5 py-0.5 rounded-full font-mono">
-              {filteredPrompts.length} / {prompts.length}
-            </span>
-            <span className="hidden sm:inline text-[11px] text-[#666666]">· {zh ? `${prompts.length} 组 · Skill 强控 · 单段无括号` : `${prompts.length} collections · SkillGuard enforced · single paragraph, no brackets`}</span>
+        {/* Theme Filter Bar */}
+        <div className="flex flex-wrap items-center gap-2 mb-5 bg-[#111111] border border-[#222222] rounded-xl p-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0 pb-0.5">
+            {THEMES.map((theme) => {
+              const isActive = (theme === '全部写真' && !filters.theme) || filters.theme === theme;
+              return (
+                <button
+                  key={theme}
+                  onClick={() => onThemeSelect(theme)}
+                  className={`px-3 py-1.5 rounded-md whitespace-nowrap transition-all font-medium text-xs ${
+                    isActive ? 'bg-[#1e1e1e] border' : 'text-[#888888] hover:bg-[#161616] hover:text-[#e5e5e5]'
+                  }`}
+                  style={isActive ? { color: activeStyleMeta?.accent || '#d4af37', borderColor: `${activeStyleMeta?.accent || '#d4af37'}60` } : {}}
+                >
+                  {themeName(lang, theme)}
+                </button>
+              );
+            })}
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+
+          <div className="ml-auto flex items-center gap-2">
             <button
               onClick={handleGlobalBlindBox}
               disabled={isBlindBoxLoading}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-black text-xs sm:text-sm font-black shadow-lg border transition-all active:scale-95 disabled:opacity-60"
-              style={{ background: activeStyleMeta?.accent || '#d4af37', borderColor: activeStyleMeta?.accent || '#d4af37' }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-black text-xs font-bold shadow-lg transition-all active:scale-95 disabled:opacity-60"
+              style={{ background: activeStyleMeta?.accent || '#d4af37' }}
               title={zh ? '随机组合风格、镜头和场景，瞬间生成灵感卡片' : 'Randomly combine style, lens and location for an instant inspiration card'}
             >
               <Shuffle className={`w-4 h-4 ${isBlindBoxLoading ? 'animate-spin' : ''}`} />
-              <span>{isBlindBoxLoading ? (zh ? '盲盒开箱中...' : 'Opening blind box...') : (zh ? '🎲 随机盲盒' : '🎲 Random blind box')}</span>
-              <span className="hidden sm:inline text-[10px] bg-black/15 px-1.5 py-0.5 rounded-full">{zh ? '一键灵感' : 'Instant idea'}</span>
+              <span>{isBlindBoxLoading ? (zh ? '开箱中…' : 'Opening…') : (zh ? '随机盲盒' : 'Random blind box')}</span>
             </button>
 
-          {(filters.style || filters.theme || filters.search || filters.favoritesOnly) && (
-            <button
-              onClick={() => setFilters({ style: '', theme: '', search: '', favoritesOnly: false })}
-              className="text-xs hover:underline font-serif-hk transition-colors"
-              style={{ color: activeStyleMeta?.accent || '#d4af37' }}
-            >
-              {zh ? '清空全部筛选条件' : 'Clear all filters'}
-            </button>
-          )}
+            {(filters.style || filters.theme || filters.search || filters.favoritesOnly) && (
+              <button
+                onClick={() => setFilters({ style: '', theme: '', search: '', favoritesOnly: false })}
+                className="text-xs text-[#888888] hover:text-[#d4af37] font-serif-hk transition-colors"
+              >
+                {zh ? '清除筛选' : 'Clear filters'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -392,23 +417,25 @@ export default function App() {
       </main>
 
       {/* Floating Scroll-to-Top Button */}
-      <button
-        onClick={scrollToTop}
-        className="fixed bottom-6 left-6 z-40 p-3 rounded-full bg-[#141414] hover:bg-[#222222] text-[#d4af37] hover:text-white shadow-xl border border-[#2a2a2a] hover:border-[#d4af37] transition-all active:scale-95 backdrop-blur-xs"
-        title={zh ? '返回顶部' : 'Back to top'}
-      >
-        <ArrowUp className="w-4 h-4" />
-      </button>
+      {showTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-40 p-3 rounded-full bg-[#141414] hover:bg-[#222222] text-[#d4af37] hover:text-white shadow-xl border border-[#2a2a2a] hover:border-[#d4af37] transition-all active:scale-95 animate-in fade-in duration-200"
+          title={zh ? '返回顶部' : 'Back to top'}
+        >
+          <ArrowUp className="w-4 h-4" />
+        </button>
+      )}
 
       {/* Footer */}
       <footer className="w-full bg-[#000000] text-[#666666] text-xs py-8 border-t border-[#222222] mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="font-cinzel text-lg font-bold text-[#d4af37] tracking-widest uppercase">
-              VOGUE HONG KONG
+              Global Style Studio
             </span>
             <span className="text-[#333333]">|</span>
-            <span className="font-serif-hk text-[#aaaaaa]">{zh ? '港姐夏日写真集 视觉总监策划专案' : 'Summer Photobook · Visual Director Edition'}</span>
+            <span className="font-serif-hk text-[#aaaaaa]">{zh ? '六风格夏日写真集 · 视觉总监策划专案' : 'Six-Style Summer Photobook · Visual Director Edition'}</span>
           </div>
 
           <p className="text-[#666666] font-serif-hk text-center md:text-right">

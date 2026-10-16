@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ALL_CURATED_PROMPTS } from './data/curatedAll';
 import { PhotobookPrompt, FilterState, PresetItem, StyleId } from './types';
 import { STYLE_META } from './data/styleConfig';
@@ -29,6 +29,9 @@ const THEMES = [
   '阳光海岸',
   '冲绳海岸',
 ];
+
+// Streaming pagination: render cards in chunks so the DOM stays light
+const PAGE_SIZE = 24;
 
 export default function App() {
   // 自定义/盲盒提示词持久化到 localStorage，刷新页面后不丢失
@@ -182,6 +185,28 @@ export default function App() {
   }, [prompts, filters, favorites]);
 
   const activeStyleMeta = filters.style ? STYLE_META[filters.style as StyleId] : null;
+
+  // Streaming pagination state: reset chunk when filters change
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [filters.style, filters.theme, filters.search, filters.favoritesOnly]);
+
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredPrompts.length));
+        }
+      },
+      { rootMargin: '300px 0px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [filteredPrompts.length, visibleCount]);
 
   const [isBlindBoxLoading, setIsBlindBoxLoading] = useState(false);
 
@@ -372,21 +397,44 @@ export default function App() {
           </div>
         </div>
 
-        {/* Grid of Prompt Cards */}
+        {/* Grid of Prompt Cards (streamed in chunks of PAGE_SIZE) */}
         {filteredPrompts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredPrompts.map((prompt) => (
-              <PromptCard
-                key={prompt.id}
-                prompt={prompt}
-                isFavorite={favorites.includes(prompt.id)}
-                onToggleFavorite={handleToggleFavorite}
-                onUseInGenerator={handleUseInGenerator}
-                onShowToast={showToast}
-                lang={lang}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredPrompts.slice(0, visibleCount).map((prompt) => (
+                <PromptCard
+                  key={prompt.id}
+                  prompt={prompt}
+                  isFavorite={favorites.includes(prompt.id)}
+                  onToggleFavorite={handleToggleFavorite}
+                  onUseInGenerator={handleUseInGenerator}
+                  onShowToast={showToast}
+                  lang={lang}
+                />
+              ))}
+            </div>
+
+            {/* Streaming footer: auto-loads next chunk when scrolled into view */}
+            {visibleCount < filteredPrompts.length ? (
+              <div ref={sentinelRef} className="flex items-center justify-center gap-3 mt-6">
+                <span className="text-xs text-[#888888] font-mono">
+                  {t(lang, 'showingCount', { shown: visibleCount, total: filteredPrompts.length })}
+                </span>
+                <button
+                  onClick={() => setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredPrompts.length))}
+                  className="px-4 py-2 rounded-lg bg-[#1a1a1a] text-[#cccccc] text-xs font-medium border border-[#333333] hover:bg-[#252525] hover:border-[#d4af37]/50 transition-all"
+                >
+                  {t(lang, 'loadMore')}
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-3 mt-6">
+                <span className="text-xs text-[#666666] font-mono">
+                  {t(lang, 'showingCount', { shown: filteredPrompts.length, total: filteredPrompts.length })}
+                </span>
+              </div>
+            )}
+          </>
         ) : (
           /* Empty State */
           <div className="bg-[#0f0f0f] rounded-2xl border border-dashed border-[#333333] p-12 text-center my-8">

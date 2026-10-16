@@ -110,6 +110,10 @@ const UI: Record<string, { zh: string; en: string }> = {
   'toastLoaded': { zh: '已载入「{title}」至工作台', en: 'Loaded "{title}" into the studio' },
   'toastPresetLoaded': { zh: '已将预设「{name}」载入工作台', en: 'Preset "{name}" loaded into the studio' },
 
+  // Pagination
+  'loadMore': { zh: '加载更多', en: 'Load more' },
+  'showingCount': { zh: '显示 {shown} / {total}', en: 'Showing {shown} of {total}' },
+
   // Themes
   'themeSummer': { zh: '夏日写真', en: 'Summer Shots' },
   'themeStreet': { zh: '都市街拍', en: 'City Street Style' },
